@@ -213,8 +213,8 @@ def check_manifests() -> None:
     remotes = server.get("remotes", [])
     if remotes != [{"type": "streamable-http", "url": MCP_URL}]:
         err(f"registry/server.json: remotes must be one streamable-http {MCP_URL}")
-    if server.get("name") != "com.whisperr/whisperr":
-        err("registry/server.json: name must be com.whisperr/whisperr")
+    if server.get("name") != "net.whisperr/whisperr":
+        err("registry/server.json: name must be net.whisperr/whisperr")
 
     # Cursor plugin.
     if not re.fullmatch(r"[a-z0-9]([a-z0-9.-]*[a-z0-9])?", cursor.get("name", "")):

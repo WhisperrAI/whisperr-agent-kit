@@ -1,6 +1,6 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
-  "name": "com.whisperr/whisperr",
+  "name": "net.whisperr/whisperr",
   "title": "Whisperr",
   "description": "Install the Whisperr retention SDK, verify received events, and read churn and retention data.",
   "version": "2.0.0",

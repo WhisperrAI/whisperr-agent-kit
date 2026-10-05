@@ -96,7 +96,7 @@ Docs: https://cursor.com/docs/reference/plugins (section "Submitting a plugin")
 3. Without the marketplace (works today): the "Add to Cursor" deeplink in
    the README.
 
-## 4. Official MCP Registry (`com.whisperr/whisperr`)
+## 4. Official MCP Registry (`net.whisperr/whisperr`)
 
 Docs: https://github.com/modelcontextprotocol/registry/blob/main/docs/modelcontextprotocol-io/authentication.mdx ·
 https://github.com/modelcontextprotocol/registry/blob/main/docs/modelcontextprotocol-io/remote-servers.mdx
@@ -104,7 +104,7 @@ https://github.com/modelcontextprotocol/registry/blob/main/docs/modelcontextprot
 Do not publish before `https://mcp.whisperr.net/mcp` is live ("A remote
 server MUST be publicly accessible at its specified URL").
 
-The entry is `registry/server.json`. The namespace `com.whisperr` is proven
+The entry is `registry/server.json`. The namespace `net.whisperr` is proven
 with a DNS TXT record on the apex `whisperr.net`.
 
 1. **Done (2026-10-05):** an Ed25519 key pair was generated on George's Mac
@@ -135,7 +135,7 @@ with a DNS TXT record on the apex `whisperr.net`.
    ```
 
 6. Check:
-   `curl "https://registry.modelcontextprotocol.io/v0/servers?search=com.whisperr/whisperr"`.
+   `curl "https://registry.modelcontextprotocol.io/v0/servers?search=net.whisperr/whisperr"`.
 7. Each server release: raise `version` in `registry/server.json` and
    publish again. Versions are immutable.
 
@@ -144,7 +144,7 @@ with a DNS TXT record on the apex `whisperr.net`.
 The VS Code `@mcp` gallery reads the GitHub MCP Registry. After step 4,
 check https://github.com/mcp for the current self-publish process. If it is
 still manual, **George** emails `partnerships@github.com` with the registry
-name `com.whisperr/whisperr`. The install link in the README works without a
+name `net.whisperr/whisperr`. The install link in the README works without a
 listing.
 
 ## 6. Catalogs that need no review
