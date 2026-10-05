@@ -1,0 +1,31 @@
+name: release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - run: pip install "jsonschema[format]>=4.23" pyyaml
+      - run: python3 scripts/validate.py --require-schema
+      - name: Tag matches manifest version
+        run: |
+          v="$(python3 -c 'import json;print(json.load(open("plugin.json"))["version"])')"
+          test "v$v" = "$GITHUB_REF_NAME" || { echo "tag $GITHUB_REF_NAME != manifest v$v"; exit 1; }
+      - run: ./scripts/build-openai-zip.sh
+      - name: GitHub release with the OpenAI ZIP
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1 \
+            && gh release upload "$GITHUB_REF_NAME" dist/whisperr-openai-plugin.zip --clobber \
+            || gh release create "$GITHUB_REF_NAME" dist/whisperr-openai-plugin.zip --title "$GITHUB_REF_NAME" --generate-notes

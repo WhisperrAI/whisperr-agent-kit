@@ -1,0 +1,75 @@
+name: validate
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: "17 6 * * 1" # weekly link check
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  manifests:
+    name: Manifests, schemas, skills
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - run: pip install "jsonschema[format]>=4.23" pyyaml
+      - run: python3 scripts/validate.py --require-schema
+
+  claude-plugin:
+    name: Claude Code plugin validate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "22"
+      - run: npm install -g @anthropic-ai/claude-code@latest
+      - run: claude --version
+      - run: claude plugin validate --strict .claude-plugin/plugin.json
+      - run: claude plugin validate --strict .claude-plugin/marketplace.json
+
+  openai-zip:
+    name: OpenAI plugin ZIP
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - run: ./scripts/build-openai-zip.sh
+      - name: ZIP holds the portable package only
+        run: |
+          unzip -Z1 dist/whisperr-openai-plugin.zip > files.txt
+          for f in plugin.json mcp.json skills/whisperr-install/SKILL.md assets/logo.png assets/icon.png; do
+            grep -qx "$f" files.txt || { echo "missing $f"; exit 1; }
+          done
+          if grep -E '^(\.claude-plugin|\.cursor-plugin|hooks|\.app\.json)' files.txt; then echo "unexpected file"; exit 1; fi
+      - uses: actions/upload-artifact@v4
+        with:
+          name: whisperr-openai-plugin
+          path: dist/whisperr-openai-plugin.zip
+
+  links:
+    name: Link check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: lycheeverse/lychee-action@v2
+        with:
+          args: >-
+            --no-progress
+            --max-retries 3
+            --accept 200,204,206,301,302,307,308,429
+            --exclude '^cursor://'
+            --exclude '^vscode:'
+            --exclude '^https://mcp\.whisperr\.net/'
+            --exclude '^https://registry\.modelcontextprotocol\.io/'
+            --exclude '^https://raw\.githubusercontent\.com/WhisperrAI/whisperr-agent-kit/'
+            --exclude '^https://(claude\.ai|platform\.openai\.com|chatgpt\.com|cursor\.com/marketplace/publish)'
+            './**/*.md' './**/*.mdc' './**/*.json'
+          fail: true

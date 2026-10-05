@@ -1,0 +1,19 @@
+{
+  "name": "whisperr",
+  "displayName": "Whisperr",
+  "version": "0.1.0",
+  "description": "Install the Whisperr SDK with your own coding agent, verify that events arrive, and answer retention questions from your Whisperr data. Connects to the Whisperr remote MCP server.",
+  "author": {
+    "name": "Whisperr",
+    "url": "https://whisperr.net"
+  },
+  "homepage": "https://docs.whisperr.net/agents/",
+  "repository": "https://github.com/WhisperrAI/whisperr-agent-kit",
+  "license": "MIT",
+  "keywords": ["whisperr", "retention", "churn", "analytics", "sdk", "mcp", "react-native", "flutter", "swift"],
+  "icon": "./assets/logo.png",
+  "documentationUrl": "https://docs.whisperr.net/agents/",
+  "supportUrl": "https://github.com/WhisperrAI/whisperr-agent-kit/issues",
+  "privacyPolicyUrl": "https://whisperr.net/privacy/",
+  "termsOfServiceUrl": "https://whisperr.net/terms/"
+}

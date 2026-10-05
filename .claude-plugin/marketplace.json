@@ -1,0 +1,17 @@
+{
+  "name": "whisperr",
+  "owner": {
+    "name": "Whisperr",
+    "url": "https://whisperr.net"
+  },
+  "description": "Whisperr plugins for coding agents: SDK install, event verification and retention insights.",
+  "plugins": [
+    {
+      "name": "whisperr",
+      "source": "./",
+      "description": "Install Whisperr with your coding agent, verify events, and read retention data through the Whisperr MCP server.",
+      "category": "development",
+      "tags": ["retention", "churn", "analytics", "mobile", "mcp"]
+    }
+  ]
+}

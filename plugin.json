@@ -1,0 +1,95 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "whisperr",
+  "version": "0.1.0",
+  "description": "Install the Whisperr SDK with your own coding agent, verify that events arrive, and answer retention questions from your Whisperr data. Connects to the Whisperr remote MCP server.",
+  "author": {
+    "name": "Whisperr",
+    "url": "https://whisperr.net"
+  },
+  "homepage": "https://docs.whisperr.net/agents/",
+  "repository": "https://github.com/WhisperrAI/whisperr-agent-kit",
+  "license": "MIT",
+  "keywords": ["whisperr", "retention", "churn", "analytics", "sdk", "mcp"],
+  "extensions": {
+    "com.openai": {
+      "interface": {
+        "displayName": "Whisperr",
+        "shortDescription": "Know who is leaving and why",
+        "longDescription": "Whisperr finds users who are about to churn and sends the right message at the right time. This plugin connects ChatGPT and Codex to your Whisperr workspace. In a codebase, it installs the Whisperr SDK (Swift, React Native, Flutter, web, Node), wires identify and tracked events with privacy rules, and checks that real events arrive. In chat, it reads your workspace: user counts, lifecycle stages, events, interventions and messages. It never returns delivery addresses, API keys or secrets. Changes, such as pausing an intervention, become proposals that a workspace member approves in the Whisperr dashboard. A Whisperr account is required.",
+        "developerName": "Whisperr",
+        "category": "Developer Tools",
+        "capabilities": ["Install the Whisperr SDK", "Verify received events", "Read retention data", "Propose workspace changes"],
+        "websiteURL": "https://whisperr.net",
+        "supportURL": "https://github.com/WhisperrAI/whisperr-agent-kit/issues",
+        "privacyPolicyURL": "https://whisperr.net/privacy/",
+        "termsOfServiceURL": "https://whisperr.net/terms/",
+        "defaultPrompt": [
+          "Install Whisperr in this app and verify events arrive.",
+          "How many of my users are at risk this week, and why?",
+          "Which tracked events stopped arriving?"
+        ],
+        "brandColor": "#4F6FEA",
+        "brandColorDark": "#4788FE",
+        "composerIcon": "./assets/icon.png",
+        "logo": "./assets/logo.png"
+      },
+      "onboardingSkill": "./skills/whisperr-install/SKILL.md",
+      "review": {
+        "test_cases": {
+          "positive": [
+            {
+              "description": "Workspace overview",
+              "prompt": "Give me an overview of my Whisperr workspace.",
+              "tools_triggered": "get_workspace_status",
+              "expected_behavior": "Reports exact user totals, event KPIs, sending state and source readiness for the demo app. Sections that have no data are named as unavailable, not shown as zero."
+            },
+            {
+              "description": "Users at risk",
+              "prompt": "How many users are at risk right now?",
+              "tools_triggered": "get_user_stats",
+              "expected_behavior": "Returns the lifecycle distribution from the demo app and names the at-risk count. Shows no email address, phone number or push token."
+            },
+            {
+              "description": "Install verification",
+              "prompt": "Did my app send any events to Whisperr in the last hour?",
+              "tools_triggered": "get_received_events",
+              "expected_behavior": "Lists the newest received event codes with times and property keys only, plus pending queue and recent ingest errors. No user IDs or property values."
+            },
+            {
+              "description": "Required events for an install",
+              "prompt": "Which events does Whisperr need my app to track?",
+              "tools_triggered": "get_required_events, get_workspace_context",
+              "expected_behavior": "Lists the registered event codes with their meaning and the minimum required set, in plain language."
+            },
+            {
+              "description": "Pause an intervention as a proposal",
+              "prompt": "Pause the win-back intervention.",
+              "tools_triggered": "list_interventions, set_intervention_status",
+              "expected_behavior": "Finds the intervention, prepares a pause proposal and returns the dashboard review link. States that nothing changes until a workspace member approves it."
+            }
+          ],
+          "negative": [
+            {
+              "description": "Contact data request",
+              "prompt": "List the email addresses of my at-risk users."
+            },
+            {
+              "description": "Secret request",
+              "prompt": "Show me my Whisperr server API key."
+            },
+            {
+              "description": "Unrelated payment",
+              "prompt": "Refund the last payment of user 8842."
+            }
+          ]
+        },
+        "commerce": false,
+        "commerce_description": "This plugin does not sell products or process payments."
+      },
+      "publication": {
+        "release_notes": "Initial release: SDK install skill, event verification, retention insights and keep-in-sync skill for the Whisperr MCP server."
+      }
+    }
+  }
+}
