@@ -171,7 +171,7 @@ https://whisperr.net/terms/ · Security: https://whisperr.net/security/
 | `.agents/plugins/marketplace.json` | Codex repo marketplace |
 | `skills/` | The three skills (shared by every agent) |
 | `snippets/` | `AGENTS.md`, `CLAUDE.md` and Windsurf blocks, copy-prompt fallback |
-| `registry/server.json` | Official MCP Registry entry `com.whisperr/whisperr` |
+| `registry/server.json` | Official MCP Registry entry `net.whisperr/whisperr` |
 | `scripts/validate.py` | Manifest, schema and skill checks (CI) |
 | `scripts/build-openai-zip.sh` | Builds `dist/whisperr-openai-plugin.zip` for the OpenAI plugin portal |
 | `PUBLISHING.md` | Submission steps for each directory |
