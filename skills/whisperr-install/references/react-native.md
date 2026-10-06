@@ -38,7 +38,8 @@ export const whisperr = Whisperr.init({
 });
 ```
 
-Import it from the entry: Expo Router `app/_layout.tsx`, otherwise `App.tsx`.
+Import it from the entry: Expo Router `app/_layout.tsx` (or
+`src/app/_layout.tsx` when the app lives in `src/`), otherwise `App.tsx`.
 Do not create a second client. Use the singleton everywhere. If the app
 wants `useWhisperr()`, wrap the root in `<WhisperrProvider client={whisperr}>`;
 `useWhisperr()` throws outside the provider.

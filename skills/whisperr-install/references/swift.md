@@ -103,11 +103,14 @@ With Firebase Cloud Messaging, in
 Push opens, in `userNotificationCenter(_:didReceive:withCompletionHandler:)`:
 
 ```swift
-let deepLink = Whisperr.handleNotificationResponse(response) // nil for pushes from other senders
+Whisperr.handleNotificationResponse(response) // records the open; ignores pushes from other senders
 completionHandler()
 ```
 
-Route `deepLink` only if the app already handles deep links.
+The call returns the push's deep link (`URL?`, nil for pushes from other
+senders). Keep and route it only if the app already handles deep links:
+`if let url = Whisperr.handleNotificationResponse(response) { … }`. An
+unused `let deepLink = …` adds a compiler warning.
 
 After `reset()`, call `setPushToken` again when the next user logs in.
 
