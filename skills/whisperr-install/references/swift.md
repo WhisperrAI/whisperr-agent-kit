@@ -1,4 +1,4 @@
-# Swift / iOS (whisperr-swift 0.3+)
+# Swift / iOS (whisperr-swift 0.4+)
 
 Source: https://docs.whisperr.net/sdks/swift/
 
@@ -58,13 +58,17 @@ After login or sign-up succeeds, and on session restore:
 Task {
     try? await Whisperr.shared?.identify(
         user.id,
-        traits: ["first_name": user.firstName, "plan": user.plan],
+        traits: ["first_name": .string(user.firstName), "plan": .string(user.plan)],
         channels: [
             .email(user.email, optedIn: user.emailConsent)   // only if the app has email and a consent flag
         ]
     )
 }
 ```
+
+Trait and property values are `JSONValue`. A literal works as is
+(`"pro"`, `42`, `true`). A variable needs its case: `.string(name)`,
+`.number(Double(count))`, `.bool(flag)`.
 
 Leave out a channel the app does not use. Do not use the `email:` /
 `phone:` / `pushToken:` shortcuts unless the user opted in to that address.
@@ -74,7 +78,7 @@ On logout: `Task { await Whisperr.shared?.reset() }`.
 ## Track
 
 ```swift
-Task { try? await Whisperr.shared?.track("checkout_completed", properties: ["amount": 42, "currency": "USD"]) }
+Task { try? await Whisperr.shared?.track("checkout_completed", properties: ["amount": .number(order.total), "currency": "USD"]) }
 ```
 
 Screen views are manual: `try? await Whisperr.shared?.screen("Paywall")`.
@@ -82,24 +86,28 @@ Add them only when the event plan asks for a screen event.
 
 ## Push (only if the app already registers for remote notifications)
 
+These static calls are synchronous. They wait for `initialize` by
+themselves.
+
 ```swift
 func application(_ application: UIApplication,
                  didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
-    Task { try? await Whisperr.shared?.setPushToken(deviceToken: deviceToken) }
+    Whisperr.setPushToken(deviceToken)
 }
 ```
 
-For FCM tokens, pass the token string to `setPushToken(_:)`.
+With Firebase Cloud Messaging, in
+`messaging(_:didReceiveRegistrationToken:)`:
+`if let fcmToken { Whisperr.setPushToken(fcmToken: fcmToken) }`.
 
 Push opens, in `userNotificationCenter(_:didReceive:withCompletionHandler:)`:
 
 ```swift
-let payload = WhisperrPushPayload(userInfo: response.notification.request.content.userInfo)
-Task {
-    if let payload { _ = try? await Whisperr.shared?.trackPushOpened(payload) }
-    completionHandler()
-}
+let deepLink = Whisperr.handleNotificationResponse(response) // nil for pushes from other senders
+completionHandler()
 ```
+
+Route `deepLink` only if the app already handles deep links.
 
 After `reset()`, call `setPushToken` again when the next user logs in.
 

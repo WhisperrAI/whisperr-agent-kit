@@ -4,10 +4,11 @@ Use this prompt in AI app builders that cannot add a custom MCP server, or
 when you do not want to connect one: Lovable, Bolt, Replit, Rork, v0 and
 similar tools.
 
-1. In the Whisperr dashboard, open **Developer → API Keys** and create a
-   **publishable** key (`wpk_…`). Publishable keys are safe in app code.
-2. Copy your event list from **Events** in the dashboard (event code and one
-   line on when it happens).
+1. In the Whisperr dashboard, open **API keys → Create key** and choose
+   **Browser / mobile**. This is a publishable key (`wpk_…`). Publishable
+   keys are safe in app code.
+2. Copy your event list from **Event pipeline → Events** in the dashboard
+   (event code and one line on when it happens).
 3. Replace the three `<…>` values below and paste the whole prompt into the
    tool.
 
@@ -60,10 +61,10 @@ Steps:
    name, email, phone, address or birth date as traits or event properties.
 8. If the app uses RevenueCat, call Purchases.logIn(user.id) with the same
    id as identify, and Purchases.logOut() on logout.
-9. If the app already has push notifications, pass the device token to
-   whisperr.setPushToken(token) and call whisperr.trackPushOpened(response)
-   when the user taps a notification. Do not add push notifications if the
-   app has none.
+9. Expo / React Native only: if the app already has push notifications,
+   pass the device token to whisperr.setPushToken(token) and call
+   whisperr.trackPushOpened(response) when the user taps a notification.
+   Do not add push notifications if the app has none.
 10. Make sure the app still builds with no new errors.
 11. Tell me which flows to click so each event fires once. I will check the
     Whisperr dashboard to see the events arrive.

@@ -34,21 +34,19 @@ tool that gave each number.
 | Question | Tools |
 |---|---|
 | Overall state | `get_workspace_status` |
-| Active, new, at-risk, dormant, churned users | `get_metrics` if available; else `get_user_stats` (lifecycle distribution, engagement) |
+| Active, new, at-risk, dormant, churned users | `get_user_stats` (lifecycle distribution, engagement) |
 | Who is at risk | `list_users` with lifecycle or reach filters, then `inspect_user` for one user |
 | Why one user is at risk | `inspect_user` (traits, recent events, latest decision) |
 | Event health, arrival delay | `get_event_kpis`, `get_event_catalog`, `list_events`, `list_ingest_dead_letters` |
-| Is the install healthy | `get_install_status` if available; else `get_received_events`, `get_integration_readiness`, `get_integration_coverage`, `list_deferred_events` |
+| Is the install healthy | `get_received_events`, `get_integration_readiness`, `get_integration_coverage`, `list_deferred_events` |
 | Interventions | `list_interventions`, `list_recent_dispatches`, `list_suggestions` |
 | Messages and results | `get_message_summary`, `list_message_previews`, `get_message_feedback_report` |
 | Delivery channels | `list_delivery_channels`, `list_email_domains` |
 | Business context, brand voice | `get_knowledge` |
 | Plan and usage | `get_billing_status` |
 
-If a tool in the table is not on the server, use the closest one that is.
-Large catalogs may expose meta-tools (`search_operations`,
-`describe_operation`, `run_operation`); use them to find an operation by
-name.
+If a tool in the table is not on the server, say so. Do not guess a
+replacement.
 
 ## How to answer
 
