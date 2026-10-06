@@ -31,11 +31,12 @@ touches tracked code.
 1. Check the registered events first: `get_required_events` or
    `get_event_catalog`. Reuse an existing code when the meaning is the same.
 2. If a new code is needed, propose it to the user with: code, trigger
-   location, properties. Use `propose_events` if the server has it.
-   Otherwise the user registers it in the Whisperr dashboard, or you use the
-   registration tools (`create_registration_draft` …
-   `commit_registration`) when the grant has `install:write`.
+   location, properties. Wait for the user to agree.
 3. Wire it as the `whisperr-install` skill describes, then build.
+4. Register it with step 8 of the `whisperr-install` skill
+   (`prepare_code_source` … `commit_registration`). This needs
+   `install:write`. Without it, the user registers the event in the
+   Whisperr dashboard.
 
 ## When upgrading a Whisperr SDK
 
@@ -48,5 +49,5 @@ now sends by itself (`app_opened`, `app_installed`, `app_updated`,
 ## Verify
 
 After the change runs (dev build or after release), check
-`get_install_status` or `get_received_events`: each affected event arrives,
-and no new ingest error appears. Report: event · change · verified.
+`get_received_events`: each affected event arrives, and no new ingest error
+appears. Report: event · change · verified.

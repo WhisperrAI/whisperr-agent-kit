@@ -6,7 +6,7 @@ description: Install the Whisperr SDK in this app and prove that events arrive. 
 # Install Whisperr
 
 Whisperr decides what to track. You do the code work in this repository and
-prove that it works. Do the steps in order. Do not skip a step.
+prove that it works. Do the steps in order. Skip a step only where the step says so.
 
 ## Rules that always apply
 
@@ -34,14 +34,22 @@ prove that it works. Do the steps in order. Do not skip a step.
 Look for the Whisperr MCP tools (server name `whisperr`, endpoint
 `https://mcp.whisperr.net/mcp`). If they are not available, tell the user how
 to connect (see the "Connect" section of
-https://docs.whisperr.net/agents/) and continue in **manual mode**: follow
-the same steps, ask the user for the publishable key, and skip the MCP calls.
+https://docs.whisperr.net/agents/) and continue in **manual mode**: do steps
+2 to 7, ask the user for the publishable key, skip every MCP call, and let
+the user check the events in the Whisperr dashboard.
 
-The first MCP call opens a browser sign-in. The user picks one Whisperr app.
-Installs need the `install:write` scope, which only owners and admins can
-grant.
+The first MCP call opens a browser sign-in for the user's Whisperr app.
+Reads need `data:read`. Registration and deployment reports (steps 8 and 9)
+need `install:write`, which only owners and admins can grant.
 
-## 2. Find the stack and take a baseline
+## 2. Read the playbook
+
+Call `get_integration_playbook`. It returns `contract_version`, the ordered
+`steps` and the `invariants`. This skill follows those steps in that order.
+Pass the same `contract_version` to every later Whisperr call that accepts
+it. If a call fails with a contract-version error, stop and tell the user.
+
+## 3. Inspect the repository and take a baseline
 
 1. Detect the platform from manifest files: `Package.swift` / `*.xcodeproj`
    (Swift), `package.json` with `react-native` or `expo` (React Native),
@@ -57,51 +65,41 @@ grant.
    If the baseline already fails, tell the user and list the failures. Do not
    fix them unless the user asks.
 
-## 3. Get the install plan
+## 4. Fetch the requirements and locate the events
 
-Use the first tools that exist on the server:
-
-- `get_install_plan` (newer servers): read the playbook, the SDK version, the
-  publishable key and the event plan it returns.
-- Otherwise call `get_integration_playbook`, `get_workspace_context` and
-  `get_required_events`. The required events are the event codes Whisperr
-  needs. Use their codes exactly.
-
-**Resolve the SDK version.** Use the version from the plan. If the plan has no
-version, read the latest release from the registry, and never guess:
-
-| Platform | Package | Look up the latest | Known latest (2026-10-05) |
-|---|---|---|---|
-| Swift | `https://github.com/WhisperrAI/whisperr-swift` (SPM) | `git ls-remote --tags https://github.com/WhisperrAI/whisperr-swift` | 0.3.0 |
-| React Native / Expo | `@whisperr/react-native` | `npm view @whisperr/react-native version` | 0.3.0 |
-| Flutter | `whisperr` (pub.dev) | `flutter pub add whisperr` resolves it; or `https://pub.dev/api/packages/whisperr` | 0.4.0 |
-| Web | `@whisperr/web` | `npm view @whisperr/web version` | 0.2.1 |
-| React | `@whisperr/react` + `@whisperr/web` | `npm view @whisperr/react version` | 0.2.1 |
-| Next.js | `@whisperr/next` + `@whisperr/web` | `npm view @whisperr/next version` | 0.2.1 |
-| Node | `@whisperr/node` | `npm view @whisperr/node version` | 0.1.3 |
-
-Python, PHP and .NET: follow the quick start at https://docs.whisperr.net/.
-
-## 4. Choose the events
-
-1. Read the code to find where each required event really happens: the
-   success path of the action (after the API call or purchase succeeds), not
-   the button tap and not render.
-2. If `propose_events` exists, send your candidates (code, file, symbol, one
-   code line, non-PII property names). Use the approved list it returns.
-3. Otherwise wire only the codes from `get_required_events`. To add an event
-   that is not on the list, ask the user first.
+1. Call `get_required_events` and `get_workspace_context`. Each event has a
+   `code`, a `name`, a `payload_schema` and sometimes an `AnchorFile` and
+   `AnchorSymbol`. Use the codes exactly. An anchor is a hint; confirm it in
+   the code.
+2. Find where each event really happens: the success path of the action
+   (after the API call or purchase succeeds), not the button tap and not
+   render.
+3. Wire only these codes. To add an event that is not on the list, or to
+   change a `payload_schema`, ask the user first. Each such event goes into
+   the registration in step 8.
 4. Show the user the final list (event code, file, trigger) before you edit.
-5. Event codes are `snake_case`. Property values are plain data: ids, plan,
-   amounts, counts, reasons. No PII.
 
 Do not wire the automatic events (`app_installed`, `app_updated`,
 `app_opened`, `app_backgrounded`) on Swift 0.3+, React Native 0.3+ and
 Flutter 0.4+. The SDK sends them.
 
-## 5. Install and wire the SDK
+## 5. Install the SDK
 
-Read the reference for the platform and follow it exactly:
+Read the latest version from the registry. Never guess a version:
+
+| Platform | Package | Latest version |
+|---|---|---|
+| Swift | `https://github.com/WhisperrAI/whisperr-swift` (SPM) | `git ls-remote --tags https://github.com/WhisperrAI/whisperr-swift` |
+| React Native / Expo | `@whisperr/react-native` | `npm view @whisperr/react-native version` |
+| Flutter | `whisperr` (pub.dev) | `flutter pub add whisperr` resolves it |
+| Web | `@whisperr/web` | `npm view @whisperr/web version` |
+| React | `@whisperr/react` + `@whisperr/web` | `npm view @whisperr/react version` |
+| Next.js | `@whisperr/next` + `@whisperr/web` | `npm view @whisperr/next version` |
+| Node | `@whisperr/node` | `npm view @whisperr/node version` |
+
+Python, PHP and .NET: follow the quick start at https://docs.whisperr.net/.
+
+Then read the reference for the platform and follow it exactly:
 
 - Swift / iOS: [references/swift.md](references/swift.md)
 - React Native / Expo: [references/react-native.md](references/react-native.md)
@@ -109,56 +107,89 @@ Read the reference for the platform and follow it exactly:
 - Web, React, Next.js: [references/web.md](references/web.md)
 - Node and other servers: [references/server.md](references/server.md)
 
-Every platform needs the same five parts:
+Every platform needs the same parts:
 
 1. **Key.** Put the publishable key in the platform's public config (the
-   reference names the variable). Get it from `get_install_plan`. If the plan
-   has no key, ask the user to create one in the Whisperr dashboard:
-   **Developer → API Keys → Publishable key** (prefix `wpk_`).
+   reference names the variable). Whisperr tools never return keys. Ask the
+   user to create one in the Whisperr dashboard: **API keys → Create key →
+   Browser / mobile** (prefix `wpk_`).
 2. **Init once** at app start.
-3. **Identify** right after login or sign-up succeeds, and again on session
-   restore at app start. **Reset** on logout.
+3. **Track.** Add a `track` call at each approved position.
 4. **Push** (only if the app already uses push notifications): pass the
    device token to `setPushToken` on every launch and on token refresh, and
-   call `trackPushOpened` from the notification-tap handlers. Do not add a
-   push library or a permission prompt.
-5. **RevenueCat** (only if the app already uses RevenueCat): follow
+   report notification taps. Do not add a push library or a permission
+   prompt.
+
+## 6. Minimize payloads
+
+Each `track` call sends only the properties in the event's
+`payload_schema`: ids, plan, amounts, counts, reasons. No PII, no free text
+from users.
+
+## 7. Link the identity
+
+1. **Identify** right after login or sign-up succeeds, and again on session
+   restore at app start, with the app's stable user id. **Reset** on logout.
+2. **RevenueCat** (only if the app already uses RevenueCat): follow
    [references/revenuecat.md](references/revenuecat.md). The RevenueCat app
    user id must be the same id that you pass to `identify`.
 
-Then add the approved `track` calls at their anchors.
+Then run the same commands as the baseline. Fix every new error or warning
+that your change caused. If a fix needs a change outside the install, stop
+and ask the user.
 
-## 6. Build again
+## 8. Register new or changed events
 
-Run the same commands as the baseline. Fix every new error or warning that
-your change caused. If a fix needs a change outside the install, stop and ask
-the user.
+Skip this step when every wired code came from `get_required_events`
+unchanged. Otherwise, with `install:write`:
 
-## 7. Verify that events arrive
+1. `prepare_code_source` returns the `connection_id` of the code source.
+2. `create_registration_draft` with a stable `operation_id` (reuse it on
+   retry) and only the events you add or change: `code`, `name`,
+   `payload_schema` (JSON Schema) and `sources: [connection_id]`.
+3. `begin_registration_validation` with the draft's `revision_id`. The draft
+   is now frozen.
+4. `submit_isolated_test_event` once for each event in the draft, with
+   synthetic properties only (no names, emails or tokens) and a new
+   `operation_id` each time. Test events never create live users.
+5. `get_registration` returns the `gaps`. Repair each gap. A schema change
+   after step 3 needs a new draft.
+6. `commit_registration`. If it reports `validation_incomplete`, read the
+   gaps again, send the missing tests, and commit the same revision again.
+
+After a disconnect, `list_registration_drafts` finds unfinished drafts.
+
+## 9. Report the deployment
+
+After the user merges or deploys the change, call `report_deployment` with
+the committed `revision_id` (from step 8, or the `RevisionID` on the events
+from `get_required_events` when you registered nothing), a new `report_id`
+and the commit SHA as `deployment_ref`. This is an assertion, not proof that
+events arrive.
+
+## 10. Verify that events arrive
 
 1. Ask the user to run the app (simulator, emulator, device or dev server),
    sign in, and do the flows that trigger the wired events. Name the flows.
    You can run the app yourself if the project has a run command and a
    simulator.
-2. Poll the server every 15 seconds for up to 10 minutes:
-   - `get_install_status` if it exists, or
-   - `get_received_events` (newest events, pending queue, recent ingest
-     errors).
-   Results can be up to 15 seconds old.
-3. Expect `app_opened` (automatic) first, then the identify, then the wired
+2. Call `get_received_events` every 15 seconds for up to 10 minutes. It
+   shows the newest events, the pending ingest queue and recent ingest
+   errors. Results can be up to 15 seconds old.
+3. Expect the first automatic event of the platform (mobile: `app_opened`,
+   web: `page_viewed`; Node sends none), then the identify, then the wired
    events. If an ingest error appears, read its reason and fix the cause
    (wrong key, wrong event code, invalid property).
-4. Events that need real time (renewals, cancellations, trial expiry) can
+4. Then call `get_integration_coverage` for the coverage of the app.
+5. Events that need real time (renewals, cancellations, trial expiry) can
    stay "waiting". Mark them "verify after release".
 
-In manual mode, ask the user to open the Whisperr dashboard and check that
-the events appear.
-
-## 8. Report
+## 11. Report
 
 Print one table: event code · file · wired · received. Then list:
 
 - the commands you ran and their before/after result,
+- the registration `revision_id`, if you made one,
 - anything the user must do (add a package in Xcode, set the key in the
   hosting provider's environment, rebuild),
 - the offer to add the Whisperr block to `AGENTS.md` / `CLAUDE.md` (text in

@@ -1,4 +1,4 @@
-# React Native / Expo (@whisperr/react-native 0.3+)
+# React Native / Expo (@whisperr/react-native 0.4+)
 
 Source: https://docs.whisperr.net/sdks/react-native/
 
@@ -39,8 +39,9 @@ export const whisperr = Whisperr.init({
 ```
 
 Import it from the entry: Expo Router `app/_layout.tsx`, otherwise `App.tsx`.
-Do not create a second client. `<WhisperrProvider>` / `useWhisperr()` are
-optional.
+Do not create a second client. Use the singleton everywhere. If the app
+wants `useWhisperr()`, wrap the root in `<WhisperrProvider client={whisperr}>`;
+`useWhisperr()` throws outside the provider.
 
 ## Identify and reset
 
@@ -68,17 +69,19 @@ Screens (only if the event plan has a screen event):
 
 ## Push (only if the app already uses expo-notifications or Firebase messaging)
 
+Call `setPushToken` on the module singleton. It needs no provider.
+
 ```tsx
-import { useWhisperrPushToken } from "@whisperr/react-native";
-// expo-notifications:
-const [token, setToken] = useState<string | null>(null);
+// expo-notifications: pass the token object; the SDK reads its type.
 useEffect(() => {
-  Notifications.getDevicePushTokenAsync().then((t) => setToken(t.data));
-  const sub = Notifications.addPushTokenListener((t) => setToken(t.data));
+  Notifications.getDevicePushTokenAsync().then((t) => whisperr.setPushToken(t));
+  const sub = Notifications.addPushTokenListener((t) => whisperr.setPushToken(t));
   return () => sub.remove();
 }, []);
-useWhisperrPushToken(token);
 ```
+
+Firebase: `messaging().getToken()` and `messaging().onTokenRefresh()` →
+`whisperr.setPushToken({ token, kind: "fcm" })`.
 
 Push opens (expo-notifications):
 

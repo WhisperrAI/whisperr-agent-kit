@@ -9,7 +9,7 @@ server and gives it three skills:
 
 | Skill | What it does |
 |---|---|
-| `whisperr-install` | Detects your stack, installs the Whisperr SDK at the latest version, adds init, identify/reset, push tokens, push-open tracking and RevenueCat linking with Whisperr's privacy rules, wires your event plan, builds before and after (no new errors), then waits until real events arrive. |
+| `whisperr-install` | Follows the Whisperr integration playbook: detects your stack, installs the Whisperr SDK at the latest version, adds init, identify/reset, push tokens, push-open tracking and RevenueCat linking with Whisperr's privacy rules, wires your required events, builds before and after (no new errors), registers new events, then waits until real events arrive. |
 | `whisperr-insights` | Answers retention questions ("how many users are at risk, and why?") from your live Whisperr data. Changes become proposals that a person approves in the dashboard. |
 | `whisperr-keep-in-sync` | Checks every code change that touches tracked events, so a refactor does not silently stop an event. |
 
@@ -18,7 +18,7 @@ Next.js, any JS app) and Node. Python, PHP and .NET follow the
 [docs](https://docs.whisperr.net/).
 
 MCP server: `https://mcp.whisperr.net/mcp` (Streamable HTTP, OAuth 2.1).
-The first tool call opens a browser sign-in. You pick one Whisperr app and
+The first tool call opens a browser sign-in. You pick your Whisperr app and
 approve scopes: `data:read`, `install:write` (owners and admins) and
 `changes:propose`. You need a Whisperr account.
 
@@ -127,10 +127,12 @@ prompt into the tool. Replit also accepts a custom remote MCP server URL.
 }
 ```
 
-## Always-loaded rules for your repository
+## Rules for your repository
 
-Agents follow short, always-loaded rules better than on-demand skills. Paste
-the block that fits your agent into your repository:
+Agents follow short repository rules better than on-demand skills. Paste
+the block that fits your agent into your repository. `AGENTS.md` and
+`CLAUDE.md` load in every session; the Cursor and Windsurf rules load when
+the agent works on matching code:
 
 | Agent | File in your repo | Source |
 |---|---|---|
@@ -150,8 +152,9 @@ key variable. The `whisperr-install` skill offers to do this for you.
   your terminal, with your approval settings.
 - The only network destination the kit configures is the Whisperr MCP server
   `https://mcp.whisperr.net/mcp`, operated by Whisperr. Your agent sends it
-  tool arguments: event codes, file paths and short code lines for event
-  selection, build results, and your questions about your data.
+  tool arguments: event definitions (code, name, property schema), synthetic
+  test events, deployment identifiers such as a commit SHA, and your
+  questions about your data.
 - Whisperr tools never return delivery addresses (email, phone, push
   tokens), API keys or secrets. Changes to your workspace are proposals until
   a member approves them in the Whisperr dashboard.

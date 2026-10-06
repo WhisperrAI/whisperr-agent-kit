@@ -1,21 +1,21 @@
 # Publishing the Whisperr agent kit
 
 Steps to list Whisperr in each agent directory. Checked against the vendor
-docs on 2026-10-05. "Owner" marks who must act: **George** (account owner,
-attestations, DNS, payments) or **eng**.
+docs on 2026-10-05; states updated 2026-10-06. "Owner" marks who must act:
+**George** (account owner, attestations, DNS, payments) or **eng**.
 
 ## Before any directory
 
 | # | Item | Owner | State |
 |---|---|---|---|
-| 0.1 | `https://mcp.whisperr.net/mcp` answers over HTTPS: `401` with `WWW-Authenticate: Bearer resource_metadata=…` when unauthenticated; OAuth 2.1 with CIMD and DCR; scopes `data:read`, `install:write`, `changes:propose`, `offline_access` | eng | Rolling out |
-| 0.2 | Every tool has `title` and `readOnlyHint` / `destructiveHint` / `openWorldHint` | eng | Platform tools done; check integration tools |
+| 0.1 | `https://mcp.whisperr.net/mcp` answers over HTTPS: `401` with `WWW-Authenticate: Bearer resource_metadata=…` when unauthenticated; OAuth 2.1 with CIMD and DCR; scopes `data:read`, `install:write`, `changes:propose`, `offline_access` | eng | Live |
+| 0.2 | Every tool has `title` and `readOnlyHint` / `destructiveHint` / `idempotentHint` / `openWorldHint` | eng | Done (platform and integration tools) |
 | 0.3 | Privacy policy `https://whisperr.net/privacy/` | George | Live (v1.0, 2026-10-05) |
 | 0.4 | Terms `https://whisperr.net/terms/` | George | Live |
 | 0.5 | Support page or address. The manifests use `https://github.com/WhisperrAI/whisperr-agent-kit/issues` until a `whisperr.net/support` page exists | George | Open |
 | 0.6 | Demo workspace "Whisperr Demo" with sample data; email + password login; no MFA, no email code, no magic link | George | Open |
 | 0.7 | Video walkthrough of the 5 positive test cases in `plugin.json` (needed by OpenAI) | George | Open |
-| 0.8 | Self-test the server as a custom connector in Claude, ChatGPT developer mode, Claude Code, Codex and Cursor; run every test case | eng + George | Open |
+| 0.8 | Self-test the server as a custom connector in Claude, ChatGPT developer mode, Claude Code, Codex and Cursor; run every test case. In Cursor, confirm that OAuth accepts its redirect URI | eng + George | Open |
 
 ## 1. Claude: connector + plugin (Anthropic directory)
 
@@ -98,58 +98,38 @@ Docs: https://cursor.com/docs/reference/plugins (section "Submitting a plugin")
 
 ## 4. Official MCP Registry (`net.whisperr/whisperr`)
 
+**Done (2026-10-05).** `net.whisperr/whisperr` version 2.0.0 is published
+and active. The namespace is proven with the DNS TXT record
+`v=MCPv1; k=ed25519; p=FqPSEDDJMimZd8suHKCtWNPVZv30FHcUmYGe7nyKDh0=` on the
+apex `whisperr.net`. The Ed25519 private key is on George's Mac at
+`~/.config/whisperr/mcp-registry/key.pem` (mode 600, never commit it).
+
 Docs: https://github.com/modelcontextprotocol/registry/blob/main/docs/modelcontextprotocol-io/authentication.mdx ·
 https://github.com/modelcontextprotocol/registry/blob/main/docs/modelcontextprotocol-io/remote-servers.mdx
 
-Do not publish before `https://mcp.whisperr.net/mcp` is live ("A remote
-server MUST be publicly accessible at its specified URL").
+Check:
+`curl "https://registry.modelcontextprotocol.io/v0/servers?search=net.whisperr/whisperr"`.
 
-The entry is `registry/server.json`. The namespace `net.whisperr` is proven
-with a DNS TXT record on the apex `whisperr.net`.
+To publish a new version (versions are immutable), raise `version` in
+`registry/server.json`, then:
 
-1. **Done (2026-10-05):** an Ed25519 key pair was generated on George's Mac
-   with OpenSSL 3. Private key: `~/.config/whisperr/mcp-registry/key.pem`
-   (mode 600, never commit it). To use a managed key instead, follow the
-   Azure Key Vault variant in the docs and replace the TXT record.
-2. **George — DNS (Cloudflare, zone whisperr.net):** add a TXT record on the
-   apex (name `@`, not a subdomain), TTL auto:
-
-   ```text
-   v=MCPv1; k=ed25519; p=FqPSEDDJMimZd8suHKCtWNPVZv30FHcUmYGe7nyKDh0=
-   ```
-
-   Keep the existing `MS=…` and `google-site-verification=…` TXT records.
-   Check: `dig +short TXT whisperr.net` shows the new value.
-3. **eng:** install the publisher: `brew install mcp-publisher`.
-4. **eng:** log in with the key:
-
-   ```bash
-   PRIVATE_KEY="$(/opt/homebrew/opt/openssl@3/bin/openssl pkey -in ~/.config/whisperr/mcp-registry/key.pem -noout -text | grep -A3 "priv:" | tail -n +2 | tr -d ' :\n')"
-   mcp-publisher login dns --domain whisperr.net --private-key "${PRIVATE_KEY}"
-   ```
-
-5. **eng:** publish from the folder that holds `server.json`:
-
-   ```bash
-   cd registry && mcp-publisher publish
-   ```
-
-6. Check:
-   `curl "https://registry.modelcontextprotocol.io/v0/servers?search=net.whisperr/whisperr"`.
-7. Each server release: raise `version` in `registry/server.json` and
-   publish again. Versions are immutable.
+```bash
+PRIVATE_KEY="$(/opt/homebrew/opt/openssl@3/bin/openssl pkey -in ~/.config/whisperr/mcp-registry/key.pem -noout -text | grep -A3 "priv:" | tail -n +2 | tr -d ' :\n')"
+mcp-publisher login dns --domain whisperr.net --private-key "${PRIVATE_KEY}"
+cd registry && mcp-publisher publish
+```
 
 ## 5. VS Code / GitHub MCP Registry
 
-The VS Code `@mcp` gallery reads the GitHub MCP Registry. After step 4,
-check https://github.com/mcp for the current self-publish process. If it is
+The VS Code `@mcp` gallery reads the GitHub MCP Registry. Step 4 is
+done, so check https://github.com/mcp for the current self-publish process. If it is
 still manual, **George** emails `partnerships@github.com` with the registry
 name `net.whisperr/whisperr`. The install link in the README works without a
 listing.
 
 ## 6. Catalogs that need no review
 
-After step 4: Smithery (https://smithery.ai/new, paste the server URL);
+Step 4 is done. Smithery (https://smithery.ai/new, paste the server URL);
 check whether mcp.so, Glama and PulseMCP already import the registry entry.
 
 ## Release checklist (each version)

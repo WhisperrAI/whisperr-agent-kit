@@ -43,5 +43,5 @@ Whisperr reads no other RevenueCat subscriber attribute. Do not send
 ## Check
 
 After a test purchase in the sandbox, the Whisperr tool
-`get_revenuecat_status` (when available) shows the share of RevenueCat
+`get_revenuecat_status` shows the share of RevenueCat
 customers matched to Whisperr users.

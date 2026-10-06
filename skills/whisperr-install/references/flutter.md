@@ -1,4 +1,4 @@
-# Flutter (whisperr 0.4+, Flutter 3.19+)
+# Flutter (whisperr 0.5+, Flutter 3.19+)
 
 Source: https://docs.whisperr.net/sdks/flutter/
 
@@ -22,11 +22,12 @@ In `main()` after `WidgetsFlutterBinding.ensureInitialized()`:
 ```dart
 import 'package:whisperr/whisperr.dart';
 
-const whisperrKey = String.fromEnvironment('WHISPERR_KEY');
-if (whisperrKey.isNotEmpty) {
-  await Whisperr.initialize(apiKey: whisperrKey);
-}
+await Whisperr.initialize(apiKey: const String.fromEnvironment('WHISPERR_KEY'));
 ```
+
+`initialize` throws an `ArgumentError` when the key is empty, so a missing
+define fails at start. `Whisperr.instance` throws a `StateError` before
+`initialize`. Do not skip `initialize` and call `Whisperr.instance` later.
 
 ## Identify and reset
 
@@ -57,8 +58,11 @@ from a `NavigatorObserver` or the router.
 ```dart
 final messaging = FirebaseMessaging.instance;
 final token = await messaging.getToken();
-if (token != null) await Whisperr.instance.setPushToken(token);
-Whisperr.instance.attachPushTokenStream(messaging.onTokenRefresh);
+if (token != null) {
+  await Whisperr.instance.setPushToken(token, kind: WhisperrPushTokenKind.fcm);
+}
+Whisperr.instance.attachPushTokenStream(messaging.onTokenRefresh,
+    kind: WhisperrPushTokenKind.fcm);
 
 FirebaseMessaging.onMessageOpenedApp
     .listen((m) => Whisperr.instance.trackPushOpened(m.data));
