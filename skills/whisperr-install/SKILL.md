@@ -71,6 +71,17 @@ it. If a call fails with a contract-version error, stop and tell the user.
    `code`, a `name`, a `payload_schema` and sometimes an `AnchorFile` and
    `AnchorSymbol`. Use the codes exactly. An anchor is a hint; confirm it in
    the code.
+   When the result has `unwired_priority_codes`, wire those events first.
+   They are the must-have and strong events that the app does not send yet,
+   the same work order that the hosted PR agent gets. `priority_codes` is the
+   full must-have and strong set. On each event, `tier` gives the priority,
+   `coverage_status` tells you if it is wired already, and `wireable_on`
+   (`frontend` or `backend`) tells you which side of the app sends it. Wire
+   events that belong to this repository only.
+   `payload_schema_format` tells you how to read `payload_schema`:
+   `json_schema` is JSON Schema; `field_descriptions` maps each property
+   name to a description of its value. In both cases, send only those
+   property names.
 2. Find where each event really happens: the success path of the action
    (after the API call or purchase succeeds), not the button tap and not
    render.
