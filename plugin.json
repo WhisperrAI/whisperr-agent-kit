@@ -1,7 +1,7 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "whisperr",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Install the Whisperr SDK with your own coding agent, verify that events arrive, and answer retention questions from your Whisperr data. Connects to the Whisperr remote MCP server.",
   "author": {
     "name": "Whisperr",
@@ -88,7 +88,7 @@
         "commerce_description": "This plugin does not sell products or process payments."
       },
       "publication": {
-        "release_notes": "0.2.0: the skills name only tools that the Whisperr MCP server has. The install skill follows the server playbook, including event registration and deployment reports. Swift, React Native and Flutter snippets fixed for the current SDKs."
+        "release_notes": "0.2.1: the install skill wires the same priority events as the hosted PR agent first (unwired_priority_codes), explains payload schema formats, and fixes the Swift push-open snippet and the Expo src/app entry path. 0.2.0: the skills name only tools that the Whisperr MCP server has. The install skill follows the server playbook, including event registration and deployment reports. Swift, React Native and Flutter snippets fixed for the current SDKs."
       }
     }
   }

@@ -1,7 +1,7 @@
 {
   "name": "whisperr",
   "displayName": "Whisperr",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Install the Whisperr SDK with your own coding agent, verify that events arrive, and answer retention questions from your Whisperr data. Connects to the Whisperr remote MCP server.",
   "author": {
     "name": "Whisperr",
