@@ -3,7 +3,9 @@
 Do this only when the app already uses RevenueCat. Do not add RevenueCat.
 
 Whisperr receives subscription events from RevenueCat through a webhook that
-the user connects in the Whisperr dashboard (Integrations → RevenueCat). The
+a workspace owner or admin connects in the Whisperr dashboard. Open Event
+tracking → Subscriptions → RevenueCat, or go straight to
+`https://app.whisperr.net/integrations?source=revenuecat`. The
 webhook matches a RevenueCat customer to a Whisperr user by the **RevenueCat
 app user id**. So the id must be the same id that you pass to
 `whisperr.identify(userId)`.
