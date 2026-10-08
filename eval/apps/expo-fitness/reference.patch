@@ -1,0 +1,278 @@
+diff --git a/.env b/.env
+index f259a81..25afdd9 100644
+--- a/.env
++++ b/.env
+@@ -2,3 +2,7 @@
+ EXPO_PUBLIC_API_URL=https://api.repwise.example
+ EXPO_PUBLIC_SUPPORT_EMAIL=support@repwise.example
+ EXPO_PUBLIC_MOCK_LATENCY_MS=300
++
++# Whisperr (publishable ingestion key; safe to ship in the app).
++EXPO_PUBLIC_WHISPERR_KEY=wpk_replace_with_your_publishable_key
++EXPO_PUBLIC_WHISPERR_BASE_URL=http://localhost:8080
+diff --git a/package.json b/package.json
+index a5d3c08..5d1694a 100644
+--- a/package.json
++++ b/package.json
+@@ -16,6 +16,7 @@
+     "@react-navigation/bottom-tabs": "7.20.0",
+     "@react-navigation/native": "7.5.0",
+     "@react-navigation/native-stack": "7.20.0",
++    "@whisperr/react-native": "^0.4.0",
+     "expo": "57.0.27",
+     "expo-status-bar": "57.0.1",
+     "react": "19.2.3",
+diff --git a/src/analytics/whisperr.ts b/src/analytics/whisperr.ts
+new file mode 100644
+index 0000000..1ef673e
+--- /dev/null
++++ b/src/analytics/whisperr.ts
+@@ -0,0 +1,22 @@
++import AsyncStorage from '@react-native-async-storage/async-storage';
++import { Whisperr } from '@whisperr/react-native';
++
++import type { User } from '../api/types';
++
++const apiKey = process.env.EXPO_PUBLIC_WHISPERR_KEY ?? '';
++
++/** The app's one Whisperr client. `Whisperr.init` is an idempotent singleton. */
++export const whisperr = Whisperr.init({
++  apiKey,
++  baseUrl: process.env.EXPO_PUBLIC_WHISPERR_BASE_URL || undefined,
++  storage: AsyncStorage,
++  disabled: !apiKey,
++});
++
++/** Tell Whisperr who is signed in. Email is a contact channel only when the user opted in. */
++export function identifyUser(user: User) {
++  whisperr.identify(user.id, {
++    traits: { first_name: user.fullName.trim().split(/\s+/)[0] },
++    channels: user.marketingOptIn ? [{ type: 'email', address: user.email, optedIn: true }] : [],
++  });
++}
+diff --git a/src/screens/billing/PaywallScreen.tsx b/src/screens/billing/PaywallScreen.tsx
+index fd98011..d89d6f2 100644
+--- a/src/screens/billing/PaywallScreen.tsx
++++ b/src/screens/billing/PaywallScreen.tsx
+@@ -5,6 +5,7 @@ import { billingApi } from '../../api/billing';
+ import { messageFor } from '../../api/client';
+ import type { Plan } from '../../api/types';
+ import { Body, Button, Choice, ErrorBanner, Screen, Title, formatPrice } from '../../components/ui';
++import { whisperr } from '../../analytics/whisperr';
+ import type { RootStackParamList } from '../../navigation/types';
+ 
+ const PERKS = ['Every program, including HIIT and Mobility', 'Progress insights and trends', 'Custom weekly plans'];
+@@ -20,6 +21,10 @@ export function PaywallScreen() {
+     billingApi.listPlans().then(setPlans, (e) => setError(messageFor(e)));
+   }, []);
+ 
++  useEffect(() => {
++    whisperr.track('paywall_viewed', { source: params.source });
++  }, [params.source]);
++
+   return (
+     <Screen testID="paywall-screen">
+       <Title>Go further with Repwise Pro</Title>
+@@ -41,7 +46,10 @@ export function PaywallScreen() {
+         title="Continue"
+         testID="paywall-continue"
+         disabled={plans.length === 0}
+-        onPress={() => navigation.navigate('Checkout', { planId: selected, source: params.source })}
++        onPress={() => {
++          whisperr.track('checkout_started', { plan_id: selected, source: params.source });
++          navigation.navigate('Checkout', { planId: selected, source: params.source });
++        }}
+       />
+       <Button title="Not now" variant="secondary" testID="paywall-dismiss" onPress={() => navigation.goBack()} />
+     </Screen>
+diff --git a/src/screens/main/ProgramDetailScreen.tsx b/src/screens/main/ProgramDetailScreen.tsx
+index 79ac453..f9e5875 100644
+--- a/src/screens/main/ProgramDetailScreen.tsx
++++ b/src/screens/main/ProgramDetailScreen.tsx
+@@ -5,6 +5,7 @@ import { messageFor } from '../../api/client';
+ import type { Program } from '../../api/types';
+ import { workoutsApi } from '../../api/workouts';
+ import { Body, Button, ErrorBanner, Screen, Title } from '../../components/ui';
++import { whisperr } from '../../analytics/whisperr';
+ import type { RootStackParamList } from '../../navigation/types';
+ import { useAuth } from '../../state/AuthContext';
+ import { useSubscription } from '../../state/SubscriptionContext';
+@@ -18,7 +19,13 @@ export function ProgramDetailScreen() {
+   const [error, setError] = useState<string | null>(null);
+ 
+   useEffect(() => {
+-    workoutsApi.getProgram(params.programId).then(setProgram, (e) => setError(messageFor(e)));
++    workoutsApi.getProgram(params.programId).then(
++      (loaded) => {
++        setProgram(loaded);
++        whisperr.track('program_viewed', { program_id: loaded.id });
++      },
++      (e) => setError(messageFor(e)),
++    );
+   }, [params.programId]);
+ 
+   const start = () => {
+diff --git a/src/screens/onboarding/OnboardingScreen.tsx b/src/screens/onboarding/OnboardingScreen.tsx
+index d3b15f7..7ee04de 100644
+--- a/src/screens/onboarding/OnboardingScreen.tsx
++++ b/src/screens/onboarding/OnboardingScreen.tsx
+@@ -4,6 +4,7 @@ import { View } from 'react-native';
+ import { messageFor } from '../../api/client';
+ import type { ExperienceLevel, Goal, OnboardingAnswers } from '../../api/types';
+ import { Body, Button, Choice, ErrorBanner, Screen, Title } from '../../components/ui';
++import { whisperr } from '../../analytics/whisperr';
+ import { useAuth } from '../../state/AuthContext';
+ 
+ const GOALS: { id: Goal; label: string }[] = [
+@@ -38,11 +39,18 @@ export function OnboardingScreen() {
+     (current === 'experience' && !!answers.experience) ||
+     (current === 'schedule' && !!answers.weeklyTarget);
+ 
+-  const finish = async (final: OnboardingAnswers) => {
++  const finish = async (final: OnboardingAnswers, skipped: boolean) => {
+     setSaving(true);
+     setError(null);
+     try {
+       await completeOnboarding(final);
++      if (!skipped && final.goal && final.experience && final.weeklyTarget) {
++        whisperr.track('onboarding_completed', {
++          goal: final.goal,
++          experience_level: final.experience,
++          weekly_target: final.weeklyTarget,
++        });
++      }
+     } catch (e) {
+       setError(messageFor(e));
+       setSaving(false);
+@@ -104,9 +112,9 @@ export function OnboardingScreen() {
+           testID={isLast ? 'onboarding-finish' : 'onboarding-next'}
+           disabled={!canContinue}
+           loading={saving}
+-          onPress={() => (isLast ? finish(answers) : setStep((s) => s + 1))}
++          onPress={() => (isLast ? finish(answers, false) : setStep((s) => s + 1))}
+         />
+-        <Button title="Skip for now" variant="secondary" testID="onboarding-skip" onPress={() => finish(answers)} />
++        <Button title="Skip for now" variant="secondary" testID="onboarding-skip" onPress={() => finish(answers, true)} />
+       </View>
+     </Screen>
+   );
+diff --git a/src/state/AuthContext.tsx b/src/state/AuthContext.tsx
+index d0d4d3d..bf25c57 100644
+--- a/src/state/AuthContext.tsx
++++ b/src/state/AuthContext.tsx
+@@ -4,6 +4,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState, t
+ import { authApi, type SignUpInput } from '../api/auth';
+ import { ApiError } from '../api/client';
+ import type { OnboardingAnswers, Session, User } from '../api/types';
++import { identifyUser, whisperr } from '../analytics/whisperr';
+ 
+ const SESSION_KEY = 'repwise.session';
+ 
+@@ -43,11 +44,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
+       const saved = JSON.parse(raw) as Session;
+       try {
+         const user = await authApi.me(saved.token);
+-        if (!cancelled) await persist({ token: saved.token, user });
++        if (cancelled) return;
++        identifyUser(user);
++        await persist({ token: saved.token, user });
+       } catch (error) {
+         if (cancelled) return;
+         if (error instanceof ApiError && error.code === 'network_error') {
+           // Offline at launch: keep the cached session so the app stays usable.
++          identifyUser(saved.user);
+           setSession(saved);
+           setStatus('signedIn');
+         } else {
+@@ -63,6 +67,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
+   const signUp = useCallback(
+     async (input: SignUpInput) => {
+       const next = await authApi.signUp(input);
++      identifyUser(next.user);
++      whisperr.track('signup_completed', { method: 'email' });
+       await persist(next);
+       return next.user;
+     },
+@@ -72,6 +78,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
+   const logIn = useCallback(
+     async (email: string, password: string) => {
+       const next = await authApi.logIn(email, password);
++      identifyUser(next.user);
++      whisperr.track('logged_in', { method: 'email' });
+       await persist(next);
+       return next.user;
+     },
+@@ -80,6 +88,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
+ 
+   const logOut = useCallback(async () => {
+     const token = session?.token;
++    whisperr.reset();
+     await persist(null);
+     if (token) {
+       try {
+diff --git a/src/state/SubscriptionContext.tsx b/src/state/SubscriptionContext.tsx
+index 80e2f74..d27e748 100644
+--- a/src/state/SubscriptionContext.tsx
++++ b/src/state/SubscriptionContext.tsx
+@@ -1,6 +1,9 @@
+ import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
+ 
++import { whisperr } from '../analytics/whisperr';
+ import { billingApi, type PurchaseInput } from '../api/billing';
++import { ApiError } from '../api/client';
++import { PLANS } from '../api/fixtures';
+ import type { CancelReason, Receipt, Subscription } from '../api/types';
+ import { useAuth } from './AuthContext';
+ 
+@@ -36,7 +39,22 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
+   const purchase = useCallback(
+     async (input: PurchaseInput) => {
+       if (!token) throw new Error('Not signed in');
+-      const receipt = await billingApi.purchase(token, input);
++      let receipt: Receipt;
++      try {
++        receipt = await billingApi.purchase(token, input);
++      } catch (error) {
++        if (error instanceof ApiError && error.code === 'card_declined') {
++          whisperr.track('payment_failed', { plan_id: input.planId, reason: error.code });
++        }
++        throw error;
++      }
++      const plan = PLANS.find((p) => p.id === receipt.subscription.planId);
++      whisperr.track('subscription_started', {
++        plan_id: receipt.subscription.planId,
++        price_cents: receipt.amountCents,
++        currency: receipt.currency,
++        billing_period: plan?.period ?? 'month',
++      });
+       setLoaded({ token, subscription: receipt.subscription });
+       return receipt;
+     },
+@@ -47,6 +65,7 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
+     async (reason: CancelReason, feedback: string) => {
+       if (!token) throw new Error('Not signed in');
+       const next = await billingApi.cancel(token, reason, feedback);
++      whisperr.track('subscription_cancelled', { plan_id: next.planId, reason });
+       setLoaded({ token, subscription: next });
+       return next;
+     },
+diff --git a/src/state/WorkoutsContext.tsx b/src/state/WorkoutsContext.tsx
+index 15178b2..6bef149 100644
+--- a/src/state/WorkoutsContext.tsx
++++ b/src/state/WorkoutsContext.tsx
+@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState, t
+ 
+ import { workoutsApi, type LogWorkoutInput } from '../api/workouts';
+ import type { Workout } from '../api/types';
++import { whisperr } from '../analytics/whisperr';
+ import { useAuth } from './AuthContext';
+ 
+ interface WorkoutsContextValue {
+@@ -35,6 +36,7 @@ export function WorkoutsProvider({ children }: { children: ReactNode }) {
+     async (input: LogWorkoutInput) => {
+       if (!token) throw new Error('Not signed in');
+       const workout = await workoutsApi.log(token, input);
++      whisperr.track('workout_logged', { workout_type: workout.type, duration_minutes: workout.durationMinutes });
+       setLoaded((current) => ({
+         token,
+         workouts: [workout, ...(current?.token === token ? current.workouts : [])],
