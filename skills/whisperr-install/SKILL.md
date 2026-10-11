@@ -123,7 +123,9 @@ Every platform needs the same parts:
 1. **Key.** Put the publishable key in the platform's public config (the
    reference names the variable). Whisperr tools never return keys. Ask the
    user to create one in the Whisperr dashboard: **API keys → Create key →
-   Browser / mobile** (prefix `wpk_`).
+   Browser / mobile** (prefix `wpk_`). When the user gives an API base URL,
+   pass it to the SDK's `baseUrl` (or the platform's public base-URL
+   variable). Do not hardcode `https://api.whisperr.net`.
 2. **Init once** at app start.
 3. **Track.** Add a `track` call at each approved position.
 4. **Push** (only if the app already uses push notifications): pass the
