@@ -43,7 +43,7 @@ whisperr.identify(userId, {
 Send the app's own flags, never a guess. An `sms` channel without `optedIn`
 is not opted in. A consent change outside identify can use
 `POST /v1/consent/assertions` (server key only). Docs:
-https://docs.whisperr.net/concepts/consent/
+https://docs.whisperr.net/api/identify/
 
 Serverless (Lambda, Vercel functions): `await whisperr.flush()` before the
 handler returns. Long-running servers: `await whisperr.shutdown()` on exit.
