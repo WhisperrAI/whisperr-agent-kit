@@ -52,17 +52,30 @@ Use the client through `await Whisperr.shared` (it is `nil` before init).
 
 ## Identify and reset
 
-After login or sign-up succeeds, and on session restore:
+One helper. Call it after sign-up succeeds, after login succeeds, and at
+every app start after `initialize` when the app's auth state already has a
+user:
 
 ```swift
-Task {
+var lastPushToken: Data? // set by the push code below
+
+func identifyWhisperrUser(_ user: AppUser) async {
     try? await Whisperr.shared?.identify(
         user.id,
-        traits: ["first_name": .string(user.firstName), "plan": .string(user.plan)],
+        traits: [
+            "first_name": .string(user.firstName),
+            "is_subscriber": .bool(user.isSubscriber),
+            // only when the app knows them:
+            "app_language": .string(user.learningLanguage), // the in-app choice, not the device locale
+            "subscription_price": 9.99,
+            "subscription_currency": "USD",
+            "plan_period": "month",
+        ],
         channels: [
             .email(user.email, optedIn: user.emailConsent)   // only if the app has email and a consent flag
         ]
     )
+    if let token = lastPushToken { Whisperr.setPushToken(token) }
 }
 ```
 
@@ -73,7 +86,14 @@ Trait and property values are `JSONValue`. A literal works as is
 Leave out a channel the app does not use. Do not use the `email:` /
 `phone:` / `pushToken:` shortcuts unless the user opted in to that address.
 
-On logout: `Task { await Whisperr.shared?.reset() }`.
+On logout, in this order:
+
+```swift
+Task {
+    try? await Whisperr.shared?.track("user_logged_out") // only when it is in the work order
+    await Whisperr.shared?.reset()
+}
+```
 
 ## Track
 
@@ -87,18 +107,22 @@ Add them only when the event plan asks for a screen event.
 ## Push (only if the app already registers for remote notifications)
 
 These static calls are synchronous. They wait for `initialize` by
-themselves.
+themselves. Send the token only after `identify`: keep it in
+`lastPushToken` so the helper sends it on every launch and login, and send
+it here only while a user is signed in.
 
 ```swift
 func application(_ application: UIApplication,
                  didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
-    Whisperr.setPushToken(deviceToken)
+    lastPushToken = deviceToken
+    if session.currentUser != nil { Whisperr.setPushToken(deviceToken) } // the app's own signed-in check
 }
 ```
 
 With Firebase Cloud Messaging, in
-`messaging(_:didReceiveRegistrationToken:)`:
-`if let fcmToken { Whisperr.setPushToken(fcmToken: fcmToken) }`.
+`messaging(_:didReceiveRegistrationToken:)`: keep `fcmToken` the same way
+(a `String?`), call `Whisperr.setPushToken(fcmToken: fcmToken)` only while
+signed in, and in the helper.
 
 Push opens, in `userNotificationCenter(_:didReceive:withCompletionHandler:)`:
 
@@ -112,7 +136,8 @@ senders). Keep and route it only if the app already handles deep links:
 `if let url = Whisperr.handleNotificationResponse(response) { … }`. An
 unused `let deepLink = …` adds a compiler warning.
 
-After `reset()`, call `setPushToken` again when the next user logs in.
+After `reset()`, call `setPushToken` again only when the next user logs in
+(the helper does this).
 
 ## Build
 

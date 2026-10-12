@@ -3,17 +3,27 @@
 Do this only when the app already uses RevenueCat. Do not add RevenueCat.
 
 Whisperr receives subscription events from RevenueCat through a webhook that
-a workspace owner or admin connects in the Whisperr dashboard. Open Event
-tracking → Subscriptions → RevenueCat, or go straight to
-`https://app.whisperr.net/integrations?source=revenuecat`. The
-webhook matches a RevenueCat customer to a Whisperr user by the **RevenueCat
-app user id**. So the id must be the same id that you pass to
+a workspace owner or admin connects in the Whisperr dashboard. Call
+`get_dashboard_link` with flow `setup_revenuecat` and give the user the
+link. Without the MCP tools, the user opens Event tracking → Subscriptions →
+RevenueCat, or `https://app.whisperr.net/integrations?source=revenuecat`.
+You cannot connect RevenueCat yourself. Never ask for RevenueCat keys or
+webhook secrets.
+
+The webhook matches a RevenueCat customer to a Whisperr user by the
+**RevenueCat app user id**. So the id must be the same id that you pass to
 `whisperr.identify(userId)`.
+
+RevenueCat is the source of membership facts (start, renewal, payment
+failure, cancellation, expiry). Do not add client purchase events such as
+`subscription_started` for these facts. They would count each fact twice
+and miss renewals that happen outside the app.
 
 ## Apps with login
 
-Call `logIn` with the same id, at the same place as `identify`, and `logOut`
-at the same place as `reset`:
+Call `logIn` with the same id, at the same places as `identify` (sign-up,
+login, and app start with a signed-in user), and `logOut` at the same place
+as `reset`:
 
 | Platform | Login | Logout |
 |---|---|---|
