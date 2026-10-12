@@ -15,6 +15,12 @@ Pass the publishable key at build time:
 config package (`flutter_dotenv`, `envied`, flavors), use that instead. Tell
 the user to add the define to their run configuration and CI.
 
+When the user gives an API base URL (local, dev, or a proxy), pass it too:
+`--dart-define=WHISPERR_BASE_URL=https://…`. Do not default that define to
+`https://api.whisperr.net` or any other host. An empty base URL lets the SDK
+use its own production default; a hardcoded host sends events there even when
+the user asked for somewhere else.
+
 ## Init
 
 In `main()` after `WidgetsFlutterBinding.ensureInitialized()`:
@@ -22,12 +28,20 @@ In `main()` after `WidgetsFlutterBinding.ensureInitialized()`:
 ```dart
 import 'package:whisperr/whisperr.dart';
 
-await Whisperr.initialize(apiKey: const String.fromEnvironment('WHISPERR_KEY'));
+const apiKey = String.fromEnvironment('WHISPERR_KEY');
+const baseUrl = String.fromEnvironment('WHISPERR_BASE_URL');
+if (baseUrl.isEmpty) {
+  await Whisperr.initialize(apiKey: apiKey);
+} else {
+  await Whisperr.initialize(apiKey: apiKey, baseUrl: baseUrl);
+}
 ```
 
-`initialize` throws an `ArgumentError` when the key is empty, so a missing
-define fails at start. `Whisperr.instance` throws a `StateError` before
-`initialize`. Do not skip `initialize` and call `Whisperr.instance` later.
+Omit `baseUrl` when `WHISPERR_BASE_URL` is empty so the SDK keeps its own
+default. Do not substitute a hardcoded host. `initialize` throws an
+`ArgumentError` when the key is empty, so a missing define fails at start.
+`Whisperr.instance` throws a `StateError` before `initialize`. Do not skip
+`initialize` and call `Whisperr.instance` later.
 
 ## Identify and reset
 
