@@ -46,16 +46,37 @@ wants `useWhisperr()`, wrap the root in `<WhisperrProvider client={whisperr}>`;
 
 ## Identify and reset
 
-After login or sign-up, and on every app start when a user is already
-signed in (session restore):
+One helper in the singleton module. Call it after sign-up, after login, and
+at every app start when the app's auth state already has a user (session
+restore: the auth listener or the root layout effect that reads the session):
 
 ```ts
-whisperr.identify(user.id, {
-  traits: { first_name: user.firstName, plan: user.plan },
-  channels: [
-    { type: "email", address: user.email }, // only if the app has email
-  ],
-});
+type PushToken = Parameters<typeof whisperr.setPushToken>[0];
+let lastPushToken: PushToken | null = null;
+
+// The push code calls this. It sends the token only while a user is signed in.
+export function rememberPushToken(token: PushToken, signedIn: boolean) {
+  lastPushToken = token;
+  if (signedIn) whisperr.setPushToken(token);
+}
+
+export function identifyWhisperrUser(user: AppUser) {
+  whisperr.identify(user.id, {
+    traits: {
+      first_name: user.firstName,
+      is_subscriber: user.isSubscriber,
+      // only when the app knows them:
+      app_language: user.learningLanguage, // the in-app choice, not the device locale
+      subscription_price: 9.99,
+      subscription_currency: "USD",
+      plan_period: "month",
+    },
+    channels: [
+      { type: "email", address: user.email }, // only if the app has email
+    ],
+  });
+  if (lastPushToken) whisperr.setPushToken(lastPushToken);
+}
 ```
 
 Client code sends contacts without consent. Whisperr stores them
@@ -64,7 +85,12 @@ out. Never pass `optedIn: true`, and never use the `phone` shortcut. Consent
 must be confirmed from your backend with the server key
 ([server.md](server.md)).
 
-On logout: `whisperr.reset();`
+On logout, in this order:
+
+```ts
+whisperr.track("user_logged_out"); // only when it is in the work order
+whisperr.reset();
+```
 
 ## Track
 
@@ -77,19 +103,22 @@ Screens (only if the event plan has a screen event):
 
 ## Push (only if the app already uses expo-notifications or Firebase messaging)
 
-Call `setPushToken` on the module singleton. It needs no provider.
+Send the token only after `identify`. Pass every token to
+`rememberPushToken`. The helper above then sends it on every launch and
+login, and a refresh sends it only while a user is signed in:
 
 ```tsx
 // expo-notifications: pass the token object; the SDK reads its type.
 useEffect(() => {
-  Notifications.getDevicePushTokenAsync().then((t) => whisperr.setPushToken(t));
-  const sub = Notifications.addPushTokenListener((t) => whisperr.setPushToken(t));
+  const signedIn = session != null; // the app's own signed-in check
+  Notifications.getDevicePushTokenAsync().then((t) => rememberPushToken(t, signedIn));
+  const sub = Notifications.addPushTokenListener((t) => rememberPushToken(t, signedIn));
   return () => sub.remove();
-}, []);
+}, [session]);
 ```
 
 Firebase: `messaging().getToken()` and `messaging().onTokenRefresh()` →
-`whisperr.setPushToken({ token, kind: "fcm" })`.
+`rememberPushToken({ token, kind: "fcm" }, signedIn)`.
 
 Push opens (expo-notifications):
 

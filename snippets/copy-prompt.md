@@ -44,31 +44,50 @@ Steps:
    EXPO_PUBLIC_WHISPERR_KEY or the platform's equivalent). It is a
    publishable key and is safe in client code.
 3. Initialize the SDK once at app start.
-4. Right after login or sign-up succeeds, and on every app start when a
-   user is already signed in (this covers users who signed in before the
-   install), call:
+4. Call identify right after sign-up succeeds, right after login succeeds,
+   AND on every app start when the app already has a signed-in user (the
+   SDK does not send identify again by itself; this covers users who
+   signed in before the install):
    whisperr.identify(user.id, {
-     traits: { first_name: <the user's first name, if the app has it> },
+     traits: {
+       first_name: <the user's first name, if the app has it>,
+       is_subscriber: <true or false>,
+       // only when the app knows them:
+       app_language: <the language the user picked in the app, not the device language>,
+       subscription_price: <number, e.g. 9.99>,
+       subscription_currency: <ISO code, e.g. "USD">,
+       plan_period: <"week" | "month" | "year" | "lifetime">
+     },
      channels: [ { type: "email", address: user.email } ]
    })
-   Use the app's stable user id, never the email. Leave out channels the app
-   does not have. The app sends contacts without consent: pass
-   optedIn: false only when the user opted out, never optedIn: true, and
-   never the phone shortcut. Consent must be confirmed from your backend
-   with the server key. Tell me if the backend needs that change.
-5. On logout call whisperr.reset().
+   Use the app's stable user id, never the email. Leave out traits and
+   channels the app does not have. The app sends contacts without consent:
+   pass optedIn: false only when the user opted out, never optedIn: true,
+   and never the phone shortcut. Consent must be confirmed from your
+   backend with the server key. Tell me if the backend needs that change.
+5. On logout: if user_logged_out is in the list, call
+   whisperr.track("user_logged_out") first. Then call whisperr.reset().
 6. For each event in the list, call whisperr.track("<code>", { ...plain
    properties }) where the action SUCCEEDS (after the save, payment or API
    call succeeds), not on button tap and not during render. Use the codes
-   exactly as listed. Do not add other events.
+   exactly as listed. No heartbeats or timers. Do not add other events.
+   Instead, list other real user actions in this app that would make good
+   events (code, when it happens, properties). I will add them in the
+   Whisperr dashboard.
 7. Privacy: send first_name as the only name. Never send last name, full
    name, email, phone, address or birth date as traits or event properties.
-8. If the app uses RevenueCat, call Purchases.logIn(user.id) with the same
-   id as identify, and Purchases.logOut() on logout.
+   No free text from users in properties.
+8. Billing: if the app uses RevenueCat, call Purchases.logIn(user.id) with
+   the same id as identify, and Purchases.logOut() on logout. Do not send
+   subscription events from the app. If the app takes payments another way
+   (Stripe, Adapty, Superwall, app store notifications), do not send
+   subscription events from the app either. Tell me which billing system the
+   app uses.
 9. Expo / React Native only: if the app already has push notifications,
-   pass the device token to whisperr.setPushToken(token) and call
-   whisperr.trackPushOpened(response) when the user taps a notification.
-   Do not add push notifications if the app has none.
+   pass the device token to whisperr.setPushToken(token) only after
+   identify, on every app start and on token refresh while a user is signed
+   in. Call whisperr.trackPushOpened(response) when the user taps a
+   notification. Do not add push notifications if the app has none.
 10. Make sure the app still builds with no new errors.
 11. Tell me which flows to click so each event fires once. I will check the
     Whisperr dashboard to see the events arrive.

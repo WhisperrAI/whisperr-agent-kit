@@ -45,17 +45,33 @@ default. Do not substitute a hardcoded host. `initialize` throws an
 
 ## Identify and reset
 
-After login or sign-up, and on every app start when a user is already
-signed in (session restore):
+One helper, called after sign-up, after login, and in `main()` after
+`initialize` when the app's auth state already has a user (session restore):
 
 ```dart
-await Whisperr.instance.identify(
-  user.id,
-  traits: {'first_name': user.firstName, 'plan': user.plan},
-  channels: [
-    WhisperrChannel.email(user.email, optedIn: user.emailOptedOut ? false : null), // only if the app has email
-  ],
-);
+String? lastPushToken; // set by the push code below
+
+Future<void> identifyWhisperrUser(AppUser user) async {
+  await Whisperr.instance.identify(
+    user.id,
+    traits: {
+      'first_name': user.firstName,
+      'is_subscriber': user.isSubscriber,
+      // only when the app knows them:
+      'app_language': user.learningLanguage, // the in-app choice, not the device locale
+      'subscription_price': 9.99,
+      'subscription_currency': 'USD',
+      'plan_period': 'month',
+    },
+    channels: [
+      WhisperrChannel.email(user.email, optedIn: user.emailOptedOut ? false : null), // only if the app has email
+    ],
+  );
+  final token = lastPushToken;
+  if (token != null) {
+    await Whisperr.instance.setPushToken(token, kind: WhisperrPushTokenKind.fcm);
+  }
+}
 ```
 
 Client code sends contacts without consent. Whisperr stores them
@@ -64,7 +80,12 @@ out. Never pass `optedIn: true`, and never use the `phone` shortcut. Consent
 must be confirmed from your backend with the server key
 ([server.md](server.md)).
 
-On logout: `await Whisperr.instance.reset();`
+On logout, in this order:
+
+```dart
+await Whisperr.instance.track('user_logged_out'); // only when it is in the work order
+await Whisperr.instance.reset();
+```
 
 ## Track
 
@@ -76,14 +97,18 @@ from a `NavigatorObserver` or the router.
 
 ## Push (only if the app already uses firebase_messaging)
 
+Send the token only after `identify`. Keep it in `lastPushToken` so the
+helper sends it on every launch and login:
+
 ```dart
 final messaging = FirebaseMessaging.instance;
-final token = await messaging.getToken();
-if (token != null) {
-  await Whisperr.instance.setPushToken(token, kind: WhisperrPushTokenKind.fcm);
-}
-Whisperr.instance.attachPushTokenStream(messaging.onTokenRefresh,
-    kind: WhisperrPushTokenKind.fcm);
+lastPushToken = await messaging.getToken();
+messaging.onTokenRefresh.listen((token) {
+  lastPushToken = token;
+  if (currentUser != null) { // the app's own signed-in check
+    Whisperr.instance.setPushToken(token, kind: WhisperrPushTokenKind.fcm);
+  }
+});
 
 FirebaseMessaging.onMessageOpenedApp
     .listen((m) => Whisperr.instance.trackPushOpened(m.data));
@@ -91,7 +116,9 @@ final initial = await FirebaseMessaging.instance.getInitialMessage();
 if (initial != null) await Whisperr.instance.trackPushOpened(initial.data);
 ```
 
-Call `setPushToken` only while the OS reports notification permission.
+Do not use `attachPushTokenStream`: it sends tokens before `identify` and
+after `reset()`. Call `setPushToken` only while the OS reports notification
+permission.
 
 ## Build
 

@@ -46,11 +46,21 @@ Client components: `"use client"` + `const whisperr = useWhisperr();`.
 
 ## Identify and reset
 
-When auth resolves (login success, and on every load with a restored session):
+Call identify after sign-up, after login, and on **every page load** when
+the auth state already has a user (the auth listener or the effect that
+reads the session):
 
 ```ts
 whisperr.identify(user.id, {
-  traits: { first_name: user.firstName, plan: user.plan },
+  traits: {
+    first_name: user.firstName,
+    is_subscriber: user.isSubscriber,
+    // only when the app knows them:
+    app_language: user.contentLanguage, // the in-app choice, not navigator.language
+    subscription_price: 9.99,
+    subscription_currency: "USD",
+    plan_period: "month",
+  },
   channels: [{ type: "email", address: user.email }], // only if the app has email
 });
 ```
@@ -61,7 +71,12 @@ out. Never pass `optedIn: true`, and never use the `phone` shortcut. Consent
 must be confirmed from your backend with the server key
 ([server.md](server.md)).
 
-On logout: `whisperr.reset();`
+On logout, in this order:
+
+```ts
+whisperr.track("user_logged_out"); // only when it is in the work order
+whisperr.reset();
+```
 
 ## Track
 
