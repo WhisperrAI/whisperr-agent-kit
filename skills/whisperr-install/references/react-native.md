@@ -47,8 +47,8 @@ wants `useWhisperr()`, wrap the root in `<WhisperrProvider client={whisperr}>`;
 ## Identify and reset
 
 One helper in the singleton module. Call it after sign-up, after login, and
-at every app start when the app's auth state already has a user (the auth
-listener or the root layout effect that reads the session):
+at every app start when the app's auth state already has a user (session
+restore: the auth listener or the root layout effect that reads the session):
 
 ```ts
 type PushToken = Parameters<typeof whisperr.setPushToken>[0];
@@ -72,12 +72,18 @@ export function identifyWhisperrUser(user: AppUser) {
       plan_period: "month",
     },
     channels: [
-      { type: "email", address: user.email, optedIn: user.emailConsent }, // only if the app has these
+      { type: "email", address: user.email }, // only if the app has email
     ],
   });
   if (lastPushToken) whisperr.setPushToken(lastPushToken);
 }
 ```
+
+Client code sends contacts without consent. Whisperr stores them
+unverified and not opted in. Pass `optedIn: false` only when the user opted
+out. Never pass `optedIn: true`, and never use the `phone` shortcut. Consent
+must be confirmed from your backend with the server key
+([server.md](server.md)).
 
 On logout, in this order:
 

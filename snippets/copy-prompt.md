@@ -46,7 +46,8 @@ Steps:
 3. Initialize the SDK once at app start.
 4. Call identify right after sign-up succeeds, right after login succeeds,
    AND on every app start when the app already has a signed-in user (the
-   SDK does not send identify again by itself):
+   SDK does not send identify again by itself; this covers users who
+   signed in before the install):
    whisperr.identify(user.id, {
      traits: {
        first_name: <the user's first name, if the app has it>,
@@ -57,10 +58,13 @@ Steps:
        subscription_currency: <ISO code, e.g. "USD">,
        plan_period: <"week" | "month" | "year" | "lifetime">
      },
-     channels: [ { type: "email", address: user.email, optedIn: <the app's own email-consent flag> } ]
+     channels: [ { type: "email", address: user.email } ]
    })
    Use the app's stable user id, never the email. Leave out traits and
-   channels the app does not have. Never invent consent.
+   channels the app does not have. The app sends contacts without consent:
+   pass optedIn: false only when the user opted out, never optedIn: true,
+   and never the phone shortcut. Consent must be confirmed from your
+   backend with the server key. Tell me if the backend needs that change.
 5. On logout: if user_logged_out is in the list, call
    whisperr.track("user_logged_out") first. Then call whisperr.reset().
 6. For each event in the list, call whisperr.track("<code>", { ...plain

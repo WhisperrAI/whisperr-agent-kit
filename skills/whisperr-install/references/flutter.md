@@ -46,7 +46,7 @@ default. Do not substitute a hardcoded host. `initialize` throws an
 ## Identify and reset
 
 One helper, called after sign-up, after login, and in `main()` after
-`initialize` when the app's auth state already has a user:
+`initialize` when the app's auth state already has a user (session restore):
 
 ```dart
 String? lastPushToken; // set by the push code below
@@ -64,7 +64,7 @@ Future<void> identifyWhisperrUser(AppUser user) async {
       'plan_period': 'month',
     },
     channels: [
-      WhisperrChannel.email(user.email, optedIn: user.emailConsent), // only if the app has these
+      WhisperrChannel.email(user.email, optedIn: user.emailOptedOut ? false : null), // only if the app has email
     ],
   );
   final token = lastPushToken;
@@ -73,6 +73,12 @@ Future<void> identifyWhisperrUser(AppUser user) async {
   }
 }
 ```
+
+Client code sends contacts without consent. Whisperr stores them
+unverified and not opted in. Pass `optedIn: false` only when the user opted
+out. Never pass `optedIn: true`, and never use the `phone` shortcut. Consent
+must be confirmed from your backend with the server key
+([server.md](server.md)).
 
 On logout, in this order:
 

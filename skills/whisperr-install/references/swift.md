@@ -54,7 +54,7 @@ Use the client through `await Whisperr.shared` (it is `nil` before init).
 
 One helper. Call it after sign-up succeeds, after login succeeds, and at
 every app start after `initialize` when the app's auth state already has a
-user:
+user (session restore):
 
 ```swift
 var lastPushToken: Data? // set by the push code below
@@ -72,7 +72,7 @@ func identifyWhisperrUser(_ user: AppUser) async {
             "plan_period": "month",
         ],
         channels: [
-            .email(user.email, optedIn: user.emailConsent)   // only if the app has email and a consent flag
+            .email(user.email, optedIn: user.emailOptedOut ? false : nil)   // only if the app has email
         ]
     )
     if let token = lastPushToken { Whisperr.setPushToken(token) }
@@ -83,8 +83,11 @@ Trait and property values are `JSONValue`. A literal works as is
 (`"pro"`, `42`, `true`). A variable needs its case: `.string(name)`,
 `.number(Double(count))`, `.bool(flag)`.
 
-Leave out a channel the app does not use. Do not use the `email:` /
-`phone:` / `pushToken:` shortcuts unless the user opted in to that address.
+Leave out a channel the app does not use. Client code sends contacts
+without consent. Whisperr stores them unverified and not opted in. Pass `optedIn: false` only when the user opted
+out. Never pass `optedIn: true`, and never use the `phone` shortcut. Consent
+must be confirmed from your backend with the server key
+([server.md](server.md)).
 
 On logout, in this order:
 

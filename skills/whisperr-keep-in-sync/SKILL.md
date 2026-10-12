@@ -24,6 +24,8 @@ touches tracked code.
      start when a user is signed in, with the same stable user id. Traits
      stay within `first_name`, `app_language`, `is_subscriber`,
      `subscription_price`, `subscription_currency` and `plan_period`.
+     Client code still sends email and phone without consent (`optedIn:
+     false` only for an opt-out).
    - `setPushToken` still runs only after `identify` (on launch and token
      refresh), and not between `reset()` and the next login.
    - Logout still sends `user_logged_out` (when registered) before
