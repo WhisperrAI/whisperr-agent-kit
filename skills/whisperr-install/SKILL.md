@@ -15,8 +15,15 @@ prove that it works. Do the steps in order. Skip a step only where the step says
   no error or warning that the "before" result did not have.
 - **Privacy.** Send `first_name` as the only name trait. Never send last name,
   full name, email, phone, address or birth date as traits or event
-  properties. Send email and phone only as **channels**, each with the consent
-  flag the app already records. Never invent consent.
+  properties. Send email and phone only as **channels**. Never invent consent.
+- **Consent.** Consent must be confirmed from your backend with the server
+  key. Client code sends email and phone without consent: Whisperr stores
+  them unverified and not opted in. Pass `optedIn: false` only for an opt-out
+  the app records. Never pass `optedIn: true` or `verified: true` from client
+  code, and never use the `phone` shortcut. On the backend, a server SDK
+  `identify` sends the app's own `opted_in` and `verified` flags (see
+  [references/server.md](references/server.md)). If the repository has no
+  backend, list this as a step for the user.
 - **Keys.** Client code (mobile, browser) uses the **publishable** key
   (`wpk_…`). The server key (`wrk_…`) stays on servers, in secrets. Never put
   `wrk_` in app code. Never commit a real key to a tracked file that is not
@@ -131,7 +138,13 @@ Every platform needs the same parts:
 4. **Push** (only if the app already uses push notifications): pass the
    device token to `setPushToken` on every launch and on token refresh, and
    report notification taps. Do not add a push library or a permission
-   prompt.
+   prompt. Apple App Review guideline 4.5.4 needs consent for promotional
+   pushes: tell the user to show a line at the permission prompt that says
+   notifications may include offers and reminders, and to add an in-app
+   toggle to turn them off. When the toggle is off, report `denied` to the
+   SDK (Swift `pushPermissionChanged(.denied)` with
+   `automaticPushPermission: false`; React Native and Flutter
+   `setPushPermission` with `denied`). This is not legal advice.
 
 ## 6. Minimize payloads
 
@@ -141,8 +154,11 @@ from users.
 
 ## 7. Link the identity
 
-1. **Identify** right after login or sign-up succeeds, and again on session
-   restore at app start, with the app's stable user id. **Reset** on logout.
+1. **Identify** right after login or sign-up succeeds, and again on every
+   app start when a user is already signed in (session restore), with the
+   app's stable user id. This covers users who signed in before the install:
+   if the app has a stored user id at start, call `identify` with it.
+   **Reset** on logout.
 2. **RevenueCat** (only if the app already uses RevenueCat): follow
    [references/revenuecat.md](references/revenuecat.md). The RevenueCat app
    user id must be the same id that you pass to `identify`.
@@ -204,7 +220,8 @@ Print one table: event code · file · wired · received. Then list:
 - the commands you ran and their before/after result,
 - the registration `revision_id`, if you made one,
 - anything the user must do (add a package in Xcode, set the key in the
-  hosting provider's environment, rebuild),
+  hosting provider's environment, rebuild, confirm email/SMS consent from
+  the backend with the server key),
 - the offer to add the Whisperr block to `AGENTS.md` / `CLAUDE.md` (text in
   the kit's `snippets/` folder:
   https://github.com/WhisperrAI/whisperr-agent-kit/tree/main/snippets).

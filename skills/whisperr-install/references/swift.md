@@ -52,7 +52,8 @@ Use the client through `await Whisperr.shared` (it is `nil` before init).
 
 ## Identify and reset
 
-After login or sign-up succeeds, and on session restore:
+After login or sign-up succeeds, and on every app start when a user is
+already signed in (session restore):
 
 ```swift
 Task {
@@ -60,7 +61,7 @@ Task {
         user.id,
         traits: ["first_name": .string(user.firstName), "plan": .string(user.plan)],
         channels: [
-            .email(user.email, optedIn: user.emailConsent)   // only if the app has email and a consent flag
+            .email(user.email, optedIn: user.emailOptedOut ? false : nil)   // only if the app has email
         ]
     )
 }
@@ -70,8 +71,11 @@ Trait and property values are `JSONValue`. A literal works as is
 (`"pro"`, `42`, `true`). A variable needs its case: `.string(name)`,
 `.number(Double(count))`, `.bool(flag)`.
 
-Leave out a channel the app does not use. Do not use the `email:` /
-`phone:` / `pushToken:` shortcuts unless the user opted in to that address.
+Leave out a channel the app does not use. Client code sends contacts without consent. Whisperr stores them
+unverified and not opted in. Pass `optedIn: false` only when the user opted
+out. Never pass `optedIn: true`, and never use the `phone` shortcut. Consent
+must be confirmed from your backend with the server key
+([server.md](server.md)).
 
 On logout: `Task { await Whisperr.shared?.reset() }`.
 

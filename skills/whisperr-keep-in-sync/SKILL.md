@@ -20,8 +20,9 @@ touches tracked code.
      Whisperr). A renamed code is a new event; Whisperr loses history.
    - Properties are the same names and types. No new PII: no email, phone,
      full or last name, address, free text from users.
-   - `identify` still runs after login and on session restore; `reset`
-     still runs on logout. If the app uses RevenueCat,
+   - `identify` still runs after login and on every app start when a user
+     is signed in; `reset` still runs on logout. Client code still sends
+     email and phone without consent (`optedIn: false` only for an opt-out). If the app uses RevenueCat,
      `Purchases.logIn` still gets the same user id.
 3. If a call was deleted with its feature, ask the user whether the event
    should stop. Do not delete a registered event without asking.

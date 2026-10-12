@@ -159,7 +159,8 @@ key variable. The `whisperr-install` skill offers to do this for you.
   tokens), API keys or secrets. Changes to your workspace are proposals until
   a member approves them in the Whisperr dashboard.
 - The skills tell your agent to send `first_name` as the only name trait and
-  to send email and phone only as consented channels.
+  to send email and phone only as channels. App code sends them without
+  consent. Consent must be confirmed from your backend with the server key.
 
 Privacy policy: https://whisperr.net/privacy/ · Terms:
 https://whisperr.net/terms/ · Security: https://whisperr.net/security/

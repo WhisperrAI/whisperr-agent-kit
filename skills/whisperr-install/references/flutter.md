@@ -45,17 +45,24 @@ default. Do not substitute a hardcoded host. `initialize` throws an
 
 ## Identify and reset
 
-After login or sign-up, and on session restore:
+After login or sign-up, and on every app start when a user is already
+signed in (session restore):
 
 ```dart
 await Whisperr.instance.identify(
   user.id,
   traits: {'first_name': user.firstName, 'plan': user.plan},
   channels: [
-    WhisperrChannel.email(user.email, optedIn: user.emailConsent), // only if the app has these
+    WhisperrChannel.email(user.email, optedIn: user.emailOptedOut ? false : null), // only if the app has email
   ],
 );
 ```
+
+Client code sends contacts without consent. Whisperr stores them
+unverified and not opted in. Pass `optedIn: false` only when the user opted
+out. Never pass `optedIn: true`, and never use the `phone` shortcut. Consent
+must be confirmed from your backend with the server key
+([server.md](server.md)).
 
 On logout: `await Whisperr.instance.reset();`
 

@@ -46,14 +46,20 @@ Client components: `"use client"` + `const whisperr = useWhisperr();`.
 
 ## Identify and reset
 
-When auth resolves (login success, and on load with a restored session):
+When auth resolves (login success, and on every load with a restored session):
 
 ```ts
 whisperr.identify(user.id, {
   traits: { first_name: user.firstName, plan: user.plan },
-  channels: [{ type: "email", address: user.email, optedIn: user.emailConsent }], // only if the app has these
+  channels: [{ type: "email", address: user.email }], // only if the app has email
 });
 ```
+
+Client code sends contacts without consent. Whisperr stores them
+unverified and not opted in. Pass `optedIn: false` only when the user opted
+out. Never pass `optedIn: true`, and never use the `phone` shortcut. Consent
+must be confirmed from your backend with the server key
+([server.md](server.md)).
 
 On logout: `whisperr.reset();`
 

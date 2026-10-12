@@ -24,9 +24,26 @@ whisperr.track(userId, "payment_failed", { amount_cents: 4900, reason: "card_dec
 ```
 
 The user id is always explicit and must be the same id that the client SDK
-passes to `identify`. Identify from the server only if the client cannot:
-`whisperr.identify(userId, { traits: { first_name: user.firstName } })`.
-Same privacy rules: no email or phone as traits.
+passes to `identify`. Same privacy rules: no email or phone as traits.
+
+## Confirm consent
+
+Consent must be confirmed from your backend with the server key. Client code
+cannot do it. Where the backend stores the user's consent, send it with
+`identify`:
+
+```ts
+whisperr.identify(userId, {
+  channels: [
+    { type: "email", address: user.email, optedIn: user.emailOptIn, verified: user.emailVerified },
+  ],
+});
+```
+
+Send the app's own flags, never a guess. An `sms` channel without `optedIn`
+is not opted in. A consent change outside identify can use
+`POST /v1/consent/assertions` (server key only). Docs:
+https://docs.whisperr.net/concepts/consent/
 
 Serverless (Lambda, Vercel functions): `await whisperr.flush()` before the
 handler returns. Long-running servers: `await whisperr.shutdown()` on exit.

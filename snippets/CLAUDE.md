@@ -4,8 +4,8 @@
 Install the plugin once: `/plugin marketplace add WhisperrAI/whisperr-agent-kit` then `/plugin install whisperr@whisperr`. It adds the Whisperr MCP server and the skills `whisperr-install`, `whisperr-insights` and `whisperr-keep-in-sync`.
 
 - SDK: <PACKAGE> <VERSION>. Init in <INIT_FILE>. Key: <KEY_VARIABLE> (publishable `wpk_…`). The server key `wrk_…` never goes into client code.
-- `identify(userId)` after login and on session restore; `reset()` on logout.
-- Traits: `first_name` only for names. Never send last name, full name, email, phone or address as traits or properties. Email and phone go as channels with the app's consent flag.
+- `identify(userId)` after login and on every app start when a user is signed in; `reset()` on logout.
+- Traits: `first_name` only for names. Never send last name, full name, email, phone or address as traits or properties. Email and phone go as channels. Client code sends them without consent (`optedIn: false` only for an opt-out). Consent must be confirmed from your backend with the server key.
 - Track only registered event codes, `snake_case`, on the success path. Do not invent codes; ask first.
 - Use the `whisperr-keep-in-sync` skill before you rename, move or delete code with a Whisperr call.
 - If the app uses RevenueCat, `Purchases.logIn` gets the same user id as `identify`.

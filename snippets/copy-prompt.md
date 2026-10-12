@@ -44,14 +44,18 @@ Steps:
    EXPO_PUBLIC_WHISPERR_KEY or the platform's equivalent). It is a
    publishable key and is safe in client code.
 3. Initialize the SDK once at app start.
-4. Right after login or sign-up succeeds, and when a saved session is
-   restored at start, call:
+4. Right after login or sign-up succeeds, and on every app start when a
+   user is already signed in (this covers users who signed in before the
+   install), call:
    whisperr.identify(user.id, {
      traits: { first_name: <the user's first name, if the app has it> },
-     channels: [ { type: "email", address: user.email, optedIn: <the app's own email-consent flag> } ]
+     channels: [ { type: "email", address: user.email } ]
    })
    Use the app's stable user id, never the email. Leave out channels the app
-   does not have. Never invent consent.
+   does not have. The app sends contacts without consent: pass
+   optedIn: false only when the user opted out, never optedIn: true, and
+   never the phone shortcut. Consent must be confirmed from your backend
+   with the server key. Tell me if the backend needs that change.
 5. On logout call whisperr.reset().
 6. For each event in the list, call whisperr.track("<code>", { ...plain
    properties }) where the action SUCCEEDS (after the save, payment or API
