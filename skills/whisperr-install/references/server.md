@@ -40,9 +40,16 @@ whisperr.identify(userId, {
 });
 ```
 
-Send the app's own flags, never a guess. An `sms` channel without `optedIn`
-is not opted in. A consent change outside identify can use
-`POST /v1/consent/assertions` (server key only). Docs:
+Send the app's own flags, never a guess. This server-key `identify` is what
+makes the contact sendable, also for an address the app sent first. Whisperr
+never opts in SMS by default: send `optedIn: true` for SMS consent.
+
+The Node, Python and PHP SDKs send `opted_in: true` when `optedIn` is
+omitted, and their `phone` shortcut does the same. Wire a channel only when
+the app holds consent for it, or pass `optedIn: false`.
+
+`POST /v1/consent/assertions` (server key only) records consent proof or an
+opt-out. It does not make a contact sendable by itself. Docs:
 https://docs.whisperr.net/api/identify/
 
 Serverless (Lambda, Vercel functions): `await whisperr.flush()` before the

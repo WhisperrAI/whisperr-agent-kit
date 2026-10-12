@@ -21,7 +21,8 @@ prove that it works. Do the steps in order. Skip a step only where the step says
   them unverified and not opted in. Pass `optedIn: false` only for an opt-out
   the app records. Never pass `optedIn: true` or `verified: true` from client
   code, and never use the `phone` shortcut. On the backend, a server SDK
-  `identify` sends the app's own `opted_in` and `verified` flags (see
+  `identify` sends the app's own `opted_in` and `verified` flags; that call
+  makes the contact sendable, and SMS needs an explicit `opted_in: true` (see
   [references/server.md](references/server.md)). If the repository has no
   backend, list this as a step for the user.
 - **Keys.** Client code (mobile, browser) uses the **publishable** key
