@@ -87,19 +87,20 @@ The result has `profile` (`b2c_sub` or `generic`), `work_order`,
 
 | Field | Meaning |
 |---|---|
-| `code`, `name`, `description`, `when` | The event and the user action that sends it |
+| `code`, `name`, `description`, `when` | The event and the user action that sends it. When `when` says "Skip it when the app has no accounts" (or "no logout"), skip the item in such an app |
 | `priority` | `must`, `should` or `could`. Wire every `must`. Wire `should` and `could` when this app has the action |
 | `side` | `frontend`, `backend` or `both`. Wire only the sides that this repository has |
 | `slot` | The role of the event in the model. Keep it for registration |
 | `source`, `registered` | `registered`, `universe` or `floor`. `registered: true` needs no registration |
-| `code_is_example` | `true` on the core value event. Do not use the example code. Pick the app's real value event name (for example `lesson_completed`, `workout_logged`), wire it and register it |
-| `payload_schema`, `payload_schema_format` | `json_schema` is JSON Schema; `field_descriptions` maps each property name to a description. Send only those names |
+| `code_is_example`, `example_codes` | `code_is_example: true` marks the core value event. Its `code` is empty and `example_codes` lists sample names (`lesson_completed`, `workout_logged`, `recipe_cooked`, `episode_finished`). Do not copy a sample. Pick the app's real value event name. When a universe or registered code in the work order means this action, use that code. Otherwise register a new code with slot `core_value` |
+| `payload_schema`, `payload_schema_format` | `json_schema` is JSON Schema; `field_types` maps each property name to its type (`{"field": "string"}`); `field_descriptions` maps each property name to a description. Send only those names |
 | `status` | `wired`: do nothing. `reported`: a deployment report claims it; confirm the call in the code. `open`: wire it. `agent_decides`: wire it when this app has the action, else skip and say why. `covered_by_billing_source`: a connected billing source sends it; do not wire it |
-| `satisfied_by` | Codes that already cover this item. Do not wire a duplicate |
-| `condition` | Wire the item only when this condition is true for this app |
+| `satisfied_by` | The billing provider that covers this item (for example `revenuecat`). Do not wire the item yourself |
+| `condition` | Wire the item only when this condition is true for this app. The backend billing events carry a condition; the `billing` install step (step 8) decides them |
 
 `unwired_priority_codes` lists the `must` items and strong events that are
-not wired yet. Wire those first.
+not wired yet. Wire those first. Items with a non-empty `condition` are not
+in this list.
 
 Follow each `install_steps` item (`identify_at_start`, `logout_reset`,
 `push_token_after_identify`, `billing`). An item with `required: true` must
