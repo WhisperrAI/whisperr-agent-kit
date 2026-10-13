@@ -5,8 +5,8 @@ Do this only when the app already uses RevenueCat. Do not add RevenueCat.
 Whisperr receives subscription events from RevenueCat through a webhook that
 a workspace owner or admin connects in the Whisperr dashboard. Call
 `get_dashboard_link` with flow `setup_revenuecat` and give the user the
-link. Without the MCP tools, the user opens Event tracking → Subscriptions →
-RevenueCat, or `https://app.whisperr.net/integrations?source=revenuecat`.
+link. Without the MCP tools, the user opens Integrations → RevenueCat, or
+`https://app.whisperr.net/integrations?source=revenuecat`.
 You cannot connect RevenueCat yourself. Never ask for RevenueCat keys or
 webhook secrets.
 

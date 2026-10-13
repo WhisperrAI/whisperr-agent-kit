@@ -4,11 +4,18 @@ Use this prompt in AI app builders that cannot add a custom MCP server, or
 when you do not want to connect one: Lovable, Bolt, Replit, Rork, v0 and
 similar tools.
 
-1. In the Whisperr dashboard, open **API keys → Create key** and choose
-   **Browser / mobile**. This is a publishable key (`wpk_…`). Publishable
-   keys are safe in app code.
-2. Copy your event list from **Event pipeline → Events** in the dashboard
-   (event code and one line on when it happens).
+The Whisperr dashboard fills the prompt for you: on **Home**, open
+**Connect your code → Copy prompt**, pick the platform and click **Add a
+browser key**. The prompt then has your publishable key and the events from
+your plan. Copy it and paste it into the tool.
+
+To fill it by hand:
+
+1. In the Whisperr dashboard, open **Integrations → API keys → Create key**
+   and choose **App**. This is a publishable key (`wpk_…`). Publishable keys
+   are safe in app code. The secret shows only once.
+2. Copy your event list from **Data → Events** (event code and one line on
+   when it happens).
 3. Replace the three `<…>` values below and paste the whole prompt into the
    tool.
 
@@ -96,4 +103,5 @@ Steps:
 ---
 
 When the app runs, open the app, sign in and do the listed flows. The
-events show in the Whisperr dashboard within about 15 seconds.
+events show in the Whisperr dashboard under **Data → Live** within about 15
+seconds.
