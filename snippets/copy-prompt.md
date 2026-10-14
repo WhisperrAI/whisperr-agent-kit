@@ -11,7 +11,7 @@ your plan. Copy it and paste it into the tool.
 
 To fill it by hand:
 
-1. In the Whisperr dashboard, open **Integrations → API keys → Create key**
+1. In the Whisperr dashboard, open **Settings → API keys → Create key**
    and choose **App**. This is a publishable key (`wpk_…`). Publishable keys
    are safe in app code. The secret shows only once.
 2. Copy your event list from **Data → Events** (event code and one line on
