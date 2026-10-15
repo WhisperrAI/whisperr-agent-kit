@@ -5,8 +5,8 @@ when you do not want to connect one: Lovable, Bolt, Replit, Rork, v0 and
 similar tools.
 
 The Whisperr dashboard fills the prompt for you: on **Home**, open
-**Connect your code → Copy prompt**, pick the platform and click **Add a
-browser key**. The prompt then has your publishable key and the events from
+**Connect your code → Copy prompt**, pick the platform and click **Add an
+app key**. The prompt then has your publishable key and the events from
 your plan. Copy it and paste it into the tool.
 
 To fill it by hand:
@@ -23,7 +23,8 @@ Which SDK the tool should use:
 
 | Tool | App type | SDK |
 |---|---|---|
-| Lovable, Bolt, v0 | React + Vite web app | `@whisperr/react` + `@whisperr/web` |
+| Lovable, Bolt | React + Vite web app | `@whisperr/react` + `@whisperr/web` |
+| v0 | Next.js app | `@whisperr/next` + `@whisperr/web` |
 | Rork | Expo (React Native) app | `@whisperr/react-native` |
 | Replit | Any | The SDK for the app's stack (see https://docs.whisperr.net/) |
 
@@ -33,23 +34,55 @@ Which SDK the tool should use:
 Add Whisperr (churn-signal tracking) to this app. Follow every rule.
 
 Whisperr publishable key: <WPK_KEY>
-Platform: <web (React/Vite) | Expo React Native | other: name it>
+Platform: <web | Expo | React Native | Flutter | Swift (iOS) | other: name it>
 Events to track (code: when it happens):
 <EVENT_LIST>
 
 Steps:
-1. Install the latest Whisperr SDK for this platform:
-   - React web: @whisperr/react and @whisperr/web. Wrap the app root in
-     <WhisperrProvider apiKey={...}> and use useWhisperr() in components.
+1. Install the latest Whisperr SDK for this platform. If this tool has the
+   Whisperr MCP server, call get_integration_playbook with the platform
+   (web, react, nextjs, react_native, flutter or swift) and follow its
+   guide. Otherwise:
+   - Next.js: @whisperr/next and @whisperr/web. In app/layout.tsx wrap
+     {children} in <WhisperrProvider apiKey={...}> from "@whisperr/next"
+     (Pages Router: pages/_app.tsx). Client components that track start
+     with "use client" and use useWhisperr() from "@whisperr/next".
+   - React web without Next.js: @whisperr/react and @whisperr/web. Wrap the
+     app root in <WhisperrProvider apiKey={...}> and use useWhisperr() in
+     components.
    - Any other web app: @whisperr/web. const whisperr = Whisperr.init({ apiKey }).
    - Expo / React Native: @whisperr/react-native and
-     @react-native-async-storage/async-storage. In one module:
+     @react-native-async-storage/async-storage. Expo: install both with
+     npx expo install. Bare React Native: add both with the package
+     manager, then run npx pod-install before the next iOS build. In one
+     module:
      export const whisperr = Whisperr.init({ apiKey, storage: AsyncStorage })
-     and import it from the app entry (app/_layout.tsx with Expo Router).
+     and import it from the app entry (app/_layout.tsx with Expo Router,
+     else App.tsx).
+   - Flutter: flutter pub add whisperr. In main() after
+     WidgetsFlutterBinding.ensureInitialized():
+     await Whisperr.initialize(apiKey: key). It throws ArgumentError for an
+     empty key, so skip it when the key is empty and guard calls with
+     Whisperr.isInitialized. Then call identify, track and reset on
+     Whisperr.instance with the Dart form of the calls below.
+   - Swift (iOS): Swift package https://github.com/WhisperrAI/whisperr-swift.git
+     from "0.5.0", product Whisperr on the app target. In a plain Xcode
+     project, ask me to add it in Xcode (File > Add Package Dependencies)
+     and do not edit project.pbxproj by hand. Once at launch:
+     Task { await Whisperr.initialize(apiKey: key) }. Then call
+     try await Whisperr.shared?.identify(...) and .track(...), and
+     await Whisperr.shared?.reset(). Trait and property values take
+     .string(), .number() or .bool().
    Docs: https://docs.whisperr.net/
 2. Put the key in a public environment variable (VITE_WHISPERR_KEY,
-   EXPO_PUBLIC_WHISPERR_KEY or the platform's equivalent). It is a
-   publishable key and is safe in client code.
+   NEXT_PUBLIC_WHISPERR_KEY, EXPO_PUBLIC_WHISPERR_KEY or the platform's
+   equivalent). Next.js reads it at build time, so set it in the hosting
+   provider and rebuild. Flutter: pass
+   --dart-define=WHISPERR_KEY=<key> and read
+   const String.fromEnvironment('WHISPERR_KEY'). Swift: set
+   WHISPERR_PUBLISHABLE_KEY in the app's .xcconfig, map the Info.plist key
+   WhisperrPublishableKey to $(WHISPERR_PUBLISHABLE_KEY) and read that key
+   from Bundle.main. It is a publishable key and is safe in client code.
 3. Initialize the SDK once at app start.
 4. Call identify right after sign-up succeeds, right after login succeeds,
    AND on every app start when the app already has a signed-in user (the
@@ -67,11 +100,14 @@ Steps:
      },
      channels: [ { type: "email", address: user.email } ]
    })
+   Flutter: channels: [WhisperrChannel.email(user.email)]. Swift:
+   channels: [.email(user.email)].
    Use the app's stable user id, never the email. Leave out traits and
    channels the app does not have. The app sends contacts without consent:
    pass optedIn: false only when the user opted out, never optedIn: true,
-   and never the phone shortcut. Consent must be confirmed from your
-   backend with the server key. Tell me if the backend needs that change.
+   and never the email or phone shortcuts, which opt the contact in.
+   Consent must be confirmed from your backend with the server key. Tell me
+   if the backend needs that change.
 5. On logout: if user_logged_out is in the list, call
    whisperr.track("user_logged_out") first. Then call whisperr.reset().
 6. For each event in the list, call whisperr.track("<code>", { ...plain
@@ -90,11 +126,26 @@ Steps:
    (Stripe, Adapty, Superwall, app store notifications), do not send
    subscription events from the app either. Tell me which billing system the
    app uses.
-9. Expo / React Native only: if the app already has push notifications,
-   pass the device token to whisperr.setPushToken(token) only after
-   identify, on every app start and on token refresh while a user is signed
-   in. Call whisperr.trackPushOpened(response) when the user taps a
-   notification. Do not add push notifications if the app has none.
+9. Push: only when the app already has push notifications. Do not add
+   push notifications if the app has none.
+   - Expo / React Native: pass the device token to
+     whisperr.setPushToken(token) only after identify, on every app start
+     and on token refresh while a user is signed in. Call
+     whisperr.trackPushOpened(response) when the user taps a notification.
+   - Flutter with firebase_messaging: flutter pub add
+     whisperr_firebase_messaging. After initialize, call
+     await Whisperr.instance.registerFirebaseMessaging(
+       FirebaseMessaging.instance, requestPermission: false)
+     where the app already asks for permission. For notification taps:
+     await Whisperr.instance.handleNotificationOpens(
+       FirebaseMessaging.instance, onOpen: (open, message) { ... })
+     and route to open.deepLink when it is set.
+   - Swift: Whisperr.setPushToken(deviceToken) in
+     didRegisterForRemoteNotificationsWithDeviceToken (with Firebase:
+     Whisperr.setPushToken(fcmToken: token, firebaseProjectID:
+     FirebaseApp.app()?.options.projectID)), and
+     Whisperr.handleNotificationResponse(response) when the user taps a
+     notification.
 10. Make sure the app still builds with no new errors.
 11. Tell me which flows to click so each event fires once. I will check the
     Whisperr dashboard to see the events arrive.
