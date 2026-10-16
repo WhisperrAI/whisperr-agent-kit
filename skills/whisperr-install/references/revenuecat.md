@@ -8,7 +8,32 @@ a workspace owner or admin connects in the Whisperr dashboard. Call
 link. Without the MCP tools, the user opens Integrations → RevenueCat, or
 `https://app.whisperr.net/integrations?source=revenuecat`.
 You cannot connect RevenueCat yourself. Never ask for RevenueCat keys or
-webhook secrets.
+webhook secrets, and never put one in code, chat or a commit.
+
+Tell the user how to connect:
+
+1. In RevenueCat, open **API keys** → **+ New secret API key**, choose
+   version **V2**, and grant only these permissions:
+   - `customer_information:customers:read`
+   - `customer_information:subscriptions:read`
+   - `customer_information:purchases:read`
+   - `project_configuration:integrations:read_write`
+   (`project_configuration:projects:read` is optional: it lets Whisperr find
+   the project, so the user need not paste the project ID.)
+2. In the Whisperr dashboard RevenueCat setup, paste the key (and the
+   **Project ID** from RevenueCat Project settings → General settings, if
+   the dashboard asks for it) and click **Connect**. Whisperr creates its
+   webhook in the project and imports the current state of each App Store
+   and Google Play subscription. Importing does not message anyone about
+   past changes.
+
+Fallback, without an API key: in the same setup, **Set up the webhook by hand
+instead**. The user creates the webhook values in Whisperr, adds a webhook in
+RevenueCat (Integrations → Webhooks) with them, and sends a test event. This
+path imports no history.
+
+Whisperr uses one billing source per app: if the app already has Superwall or
+Adapty connected, the user must disconnect it before connecting RevenueCat.
 
 The webhook matches a RevenueCat customer to a Whisperr user by the
 **RevenueCat app user id**. So the id must be the same id that you pass to
