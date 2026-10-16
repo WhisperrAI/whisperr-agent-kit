@@ -53,7 +53,10 @@ Steps:
    - Any other web app: @whisperr/web. const whisperr = Whisperr.init({ apiKey }).
    - Expo / React Native: @whisperr/react-native and
      @react-native-async-storage/async-storage. Expo: install both with
-     npx expo install. Bare React Native: add both with the package
+     npx expo install. When the Expo app has push notifications
+     (expo-notifications), add @whisperr/expo, expo-constants and
+     expo-application to the same command (see step 9). Bare React Native:
+     add both with the package
      manager, then run npx pod-install before the next iOS build. In one
      module:
      export const whisperr = Whisperr.init({ apiKey, storage: AsyncStorage })
@@ -66,7 +69,7 @@ Steps:
      Whisperr.isInitialized. Then call identify, track and reset on
      Whisperr.instance with the Dart form of the calls below.
    - Swift (iOS): Swift package https://github.com/WhisperrAI/whisperr-swift.git
-     from "0.5.0", product Whisperr on the app target. In a plain Xcode
+     from "0.6.0", product Whisperr on the app target. In a plain Xcode
      project, ask me to add it in Xcode (File > Add Package Dependencies)
      and do not edit project.pbxproj by hand. Once at launch:
      Task { await Whisperr.initialize(apiKey: key) }. Then call
@@ -98,21 +101,27 @@ Steps:
        subscription_currency: <ISO code, e.g. "USD">,
        plan_period: <"week" | "month" | "year" | "lifetime">
      },
-     channels: [ { type: "email", address: user.email } ]
+     email: user.email,
+     emailOptedIn: <see below>
    })
-   Flutter: channels: [WhisperrChannel.email(user.email)]. Swift:
-   channels: [.email(user.email)].
+   Flutter: identify(user.id, email: user.email, emailOptedIn: ...).
+   Swift: identify(user.id, email: user.email, emailOptedIn: ...).
    Use the app's stable user id, never the email. Leave out traits and
-   channels the app does not have. The app sends contacts without consent:
-   pass optedIn: false only when the user opted out, and never the phone
-   shortcut. Pass emailOptedIn: true with the email only when the app
-   records that this user agreed to email; it counts only when my answer to
-   "Does your signup get permission to email users?" in the Whisperr
-   dashboard is Yes or Per user, it needs web 0.4.0, React Native 0.6.0,
-   Flutter 0.7.0 or Swift 0.6.0 or later, and an earlier opt-out is kept.
-   Otherwise
-   consent is confirmed from your backend with the server key. Tell me if
-   the backend needs that change.
+   the email when the app does not have them. Add no phone channel and do
+   not use the phone shortcut.
+   Email permission:
+   - If the app asks users whether it may email them (a signup checkbox
+     or a setting), set emailOptedIn to their answer: true when they
+     agreed, false when they declined or turned it off.
+   - If the app does not ask, leave emailOptedIn out.
+   Never set emailOptedIn: true for a user who did not agree. emailOptedIn
+   needs @whisperr/web 0.4.0, @whisperr/react-native 0.6.0, Flutter
+   whisperr 0.7.0 or Swift Whisperr 0.6.0 or later; install at least that
+   version. My answer to "Does your signup get permission to email users?"
+   in the Whisperr dashboard decides whether this is enough to email the
+   user or whether the app's backend must confirm it with the server key.
+   An earlier opt-out, including the unsubscribe link, is kept. Tell me
+   whether the app has a backend.
 5. On logout: if user_logged_out is in the list, call
    whisperr.track("user_logged_out") first. Then call whisperr.reset().
 6. For each event in the list, call whisperr.track("<code>", { ...plain
@@ -134,12 +143,16 @@ Steps:
    system the app uses.
 9. Push: only when the app already has push notifications. Do not add
    push notifications if the app has none.
-   - Expo with expo-notifications: add @whisperr/expo. After identify, and
-     again right after the app's own permission request, call
-     registerForPushNotifications({ requestPermission: false }); it never
-     shows a prompt. Call useWhisperrNotificationResponse() once in the root
-     layout for notification taps.
-   - Bare React Native or Firebase messaging: pass the device token to
+   - Expo: use @whisperr/expo. Add "@whisperr/expo" to plugins in the app
+     config. After identify, and again right after the app's own
+     notification permission request, call
+     registerForPushNotifications({ requestPermission: false }) from
+     "@whisperr/expo". It sends the token and the permission to Whisperr
+     and never shows a prompt of its own. In the root layout, call
+     useWhisperrNotificationResponse() and route to its deepLink when the
+     user taps a Whisperr notification. The plugin changes native code, so
+     push needs a new build (eas build).
+   - Bare React Native: pass the device token to
      whisperr.setPushToken(token) only after identify, on every app start
      and on token refresh while a user is signed in. Call
      whisperr.trackPushOpened(response) when the user taps a notification.
