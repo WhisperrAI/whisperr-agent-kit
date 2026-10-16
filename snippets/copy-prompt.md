@@ -105,10 +105,12 @@ Steps:
    Use the app's stable user id, never the email. Leave out traits and
    channels the app does not have. The app sends contacts without consent:
    pass optedIn: false only when the user opted out, and never the phone
-   shortcut. Pass optedIn: true on the email channel only when the app
+   shortcut. Pass emailOptedIn: true with the email only when the app
    records that this user agreed to email; it counts only when my answer to
    "Does your signup get permission to email users?" in the Whisperr
-   dashboard is Yes or Per user, and an earlier opt-out is kept. Otherwise
+   dashboard is Yes or Per user, it needs web 0.4.0, React Native 0.6.0,
+   Flutter 0.7.0 or Swift 0.6.0 or later, and an earlier opt-out is kept.
+   Otherwise
    consent is confirmed from your backend with the server key. Tell me if
    the backend needs that change.
 5. On logout: if user_logged_out is in the list, call

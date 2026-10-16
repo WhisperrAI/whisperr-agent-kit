@@ -74,17 +74,21 @@ Future<void> identifyWhisperrUser(AppUser user) async {
 }
 ```
 
-Client code sends email and phone without `optedIn` by default. Whisperr
+Client code sends email and phone without consent by default. Whisperr
 then stores them unverified and not opted in, and your backend confirms
-consent with the server key ([server.md](server.md)). Pass `optedIn: true`
-on the email channel only when the app itself records that this user agreed
-to email (a checked box at signup, an email setting). It counts only when the
-owner answered "Does your signup get permission to email users?" in the
-Whisperr dashboard with Yes or Per user (with Yes, an email the app sends
-counts even without it); otherwise Whisperr ignores it. An earlier opt-out,
-including the unsubscribe link, is kept. Pass `optedIn: false` when the user
-opted out in the app. Never send `optedIn: true` for a phone or `verified:
-true` from client code, and never use the `phone` shortcut.
+consent with the server key ([server.md](server.md)).
+
+An app without a backend can opt its users' emails in instead. The owner
+answers "Does your signup get permission to email users?" in the Whisperr
+dashboard. With **Yes**, an email the app sends is opted in. With **Per
+user**, only an email sent with the shortcut flag is: `await Whisperr.instance.identify(user.id, email: user.email, emailOptedIn: true)`,
+and only when the app itself records that this user agreed to email (a
+checked box at signup, an email setting). Pass `emailOptedIn: false` when the
+user opted out in the app. An earlier opt-out, including the unsubscribe
+link, is kept. Both answers need `whisperr` 0.7.0 or later: install at least that
+version, and say so in your summary if the app pins an older one. Never send
+`verified: true` or opt in a phone from client code, and never use the
+`phone` shortcut.
 
 On logout, in this order:
 

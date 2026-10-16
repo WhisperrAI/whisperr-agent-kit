@@ -21,16 +21,19 @@ prove that it works. Do the steps in order. Skip a step only where the step says
   consent with the server key. On the backend, a server SDK `identify` sends
   the app's own `opted_in` and `verified` flags; that call makes the contact
   sendable, and SMS needs an explicit `opted_in: true` (see
-  [references/server.md](references/server.md)). Client code may pass
-  `optedIn: true` on an **email** channel only when the app itself records
-  that this user agreed to email. It counts only when the owner answered
-  "Does your signup get permission to email users?" in the Whisperr
-  dashboard with Yes or Per user. An earlier opt-out, including the
-  unsubscribe link, is kept. Pass `optedIn: false` for an opt-out the app
-  records. Never pass `optedIn: true` for a phone or `verified: true` from
-  client code, and never use the `phone` shortcut. If the repository has no
-  backend, tell the user to answer the email permission question in the
-  dashboard.
+  [references/server.md](references/server.md)). An app without a backend
+  can opt emails in from client code instead: the owner answers "Does your
+  signup get permission to email users?" in the Whisperr dashboard. With
+  Yes, an email the app sends is opted in. With Per user, only an email sent
+  with the shortcut flag `emailOptedIn: true` is; pass it only when the app
+  itself records that this user agreed to email. Both answers need the
+  minimum SDK versions in the platform reference (web 0.4.0, React Native
+  0.6.0, Flutter 0.7.0, Swift 0.6.0). An earlier opt-out, including the
+  unsubscribe link, is kept. Pass `emailOptedIn: false` (or `optedIn: false`
+  on the channel) for an opt-out the app records. Never opt in a phone or
+  pass `verified: true` from client code, and never use the `phone`
+  shortcut. If the repository has no backend, tell the user to answer the
+  email permission question in the dashboard.
 - **Keys.** Client code (mobile, browser) uses the **publishable** key
   (`wpk_…`). The server key (`wrk_…`) stays on servers, in secrets. Never put
   `wrk_` in app code. Never commit a real key to a tracked file that is not
