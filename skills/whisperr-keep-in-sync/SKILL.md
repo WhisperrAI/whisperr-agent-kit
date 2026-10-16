@@ -30,10 +30,10 @@ touches tracked code.
      refresh), and not between `reset()` and the next login.
    - Logout still sends `user_logged_out` (when registered) before
      `reset()`. If the app uses RevenueCat, `Purchases.logIn` still gets
-     the same user id.
+     the same user id; with Superwall or Adapty, that SDK's `identify` does.
    - Billing events (`subscription_*`, `trial_started`) still come from the
      server, after the app updates its own state, with the same user id.
-     With RevenueCat, no client membership events exist.
+     With RevenueCat, Superwall or Adapty, no client membership events exist.
 3. If a call was deleted with its feature, ask the user whether the event
    should stop. Do not delete a registered event without asking.
 

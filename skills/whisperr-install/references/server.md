@@ -60,10 +60,11 @@ Express helper: `app.use(whisperrExpress(whisperr))` from
 
 ## Billing events
 
-Use this section when the app bills through Adapty, Superwall, Stripe (SDK
-or webhooks), App Store Server Notifications, Google Play RTDN or its own
-billing backend. Whisperr has no direct source for these yet. With
-RevenueCat, use [revenuecat.md](revenuecat.md) instead.
+Use this section when the app bills through Stripe (SDK or webhooks), App
+Store Server Notifications, Google Play RTDN or its own billing backend.
+Whisperr has no direct source for these yet. With RevenueCat, Superwall or
+Adapty, use [revenuecat.md](revenuecat.md), [superwall.md](superwall.md) or
+[adapty.md](adapty.md) instead.
 
 Add the call to the server code that already handles the purchase or the
 webhook, **after** the app updates its own state (for example, after the

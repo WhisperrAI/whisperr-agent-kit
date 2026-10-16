@@ -31,7 +31,7 @@ prove that it works. Do the steps in order. Skip a step only where the step says
   already used for public config.
 - **Stable user id.** `identify(userId)` takes the app's own stable user id,
   never an email or phone number. Every Whisperr call for a user (client,
-  server, RevenueCat) uses this same id.
+  server, RevenueCat, Superwall, Adapty) uses this same id.
 - **Real actions only.** Track an event on the success path of one real user
   action. Never track in render, on a button tap, or on a timer. Never add
   heartbeats. Never put free text or personal data in properties.
@@ -223,9 +223,11 @@ and call it from each place below.
 4. **Logout.** In this order: `track("user_logged_out")` (only when it is in
    the work order), then `reset()`. After `reset()`, set the push token again
    only when the next user logs in.
-5. **RevenueCat** (only if the app already uses RevenueCat): follow
-   [references/revenuecat.md](references/revenuecat.md). `Purchases.logIn`
-   gets the same user id as `identify`.
+5. **RevenueCat, Superwall or Adapty** (only if the app already uses it):
+   follow [references/revenuecat.md](references/revenuecat.md),
+   [references/superwall.md](references/superwall.md) or
+   [references/adapty.md](references/adapty.md). That SDK's login call gets
+   the same user id as `identify`.
 
 ## 8. Connect billing
 
@@ -237,7 +239,16 @@ Find how the app takes payments. Read `billing` from step 4: when
   [references/revenuecat.md](references/revenuecat.md). Do not add client
   purchase events as membership facts. Call `get_dashboard_link` with flow
   `setup_revenuecat` and give the user the link to connect RevenueCat.
-- **Adapty, Superwall, Stripe (SDK or webhooks), App Store Server
+- **Superwall** making purchases without RevenueCat (`SuperwallKit`,
+  `expo-superwall`, the Superwall Android, Flutter or React Native SDK):
+  follow [references/superwall.md](references/superwall.md). Call
+  `get_dashboard_link` with flow `setup_superwall`.
+- **Adapty** (`react-native-adapty`, `adapty_flutter`, the Adapty iOS or
+  Android SDK): follow [references/adapty.md](references/adapty.md). Call
+  `get_dashboard_link` with flow `setup_adapty`.
+- An app has one billing source. With one of these three, do not add client
+  purchase events as membership facts.
+- **Stripe (SDK or webhooks), App Store Server
   Notifications, Google Play RTDN, or the app's own billing backend:**
   Whisperr has no direct source for these yet. Send the billing events from
   the server code that already handles the purchase or webhook, after the

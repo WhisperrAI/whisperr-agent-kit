@@ -9,7 +9,7 @@ server and gives it three skills:
 
 | Skill | What it does |
 |---|---|
-| `whisperr-install` | Follows the Whisperr integration playbook: detects your stack, installs the Whisperr SDK at the latest version, adds init, identify/reset, push tokens, push-open tracking and RevenueCat linking with Whisperr's privacy rules, wires your required events, builds before and after (no new errors), registers new events, then waits until real events arrive. |
+| `whisperr-install` | Follows the Whisperr integration playbook: detects your stack, installs the Whisperr SDK at the latest version, adds init, identify/reset, push tokens, push-open tracking and RevenueCat, Superwall or Adapty linking with Whisperr's privacy rules, wires your required events, builds before and after (no new errors), registers new events, then waits until real events arrive. |
 | `whisperr-insights` | Answers retention questions ("how many users are at risk, and why?") from your live Whisperr data. Changes become proposals that a person approves in the dashboard. |
 | `whisperr-keep-in-sync` | Checks every code change that touches tracked events, so a refactor does not silently stop an event. |
 
