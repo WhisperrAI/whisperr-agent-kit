@@ -83,11 +83,23 @@ Trait and property values are `JSONValue`. A literal works as is
 (`"pro"`, `42`, `true`). A variable needs its case: `.string(name)`,
 `.number(Double(count))`, `.bool(flag)`.
 
-Leave out a channel the app does not use. Client code sends contacts
-without consent. Whisperr stores them unverified and not opted in. Pass `optedIn: false` only when the user opted
-out. Never pass `optedIn: true`, and never use the `phone` shortcut. Consent
-must be confirmed from your backend with the server key
-([server.md](server.md)).
+Leave out a channel the app does not use.
+
+Client code sends email and phone without consent by default. Whisperr
+then stores them unverified and not opted in, and your backend confirms
+consent with the server key ([server.md](server.md)).
+
+An app without a backend can opt its users' emails in instead. The owner
+answers "Does your signup get permission to email users?" in the Whisperr
+dashboard. With **Yes**, an email the app sends is opted in. With **Per
+user**, only an email sent with the shortcut flag is: `try? await Whisperr.shared?.identify(user.id, email: user.email, emailOptedIn: true)`,
+and only when the app itself records that this user agreed to email (a
+checked box at signup, an email setting). Pass `emailOptedIn: false` when the
+user opted out in the app. An earlier opt-out, including the unsubscribe
+link, is kept. Both answers need `Whisperr` 0.6.0 or later: install at least that
+version, and say so in your summary if the app pins an older one. Never send
+`verified: true` or opt in a phone from client code, and never use the
+`phone` shortcut.
 
 On logout, in this order:
 

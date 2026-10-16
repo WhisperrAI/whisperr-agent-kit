@@ -16,15 +16,24 @@ prove that it works. Do the steps in order. Skip a step only where the step says
 - **Privacy.** Send `first_name` as the only name trait. Never send last name,
   full name, email, phone, address or birth date as traits or event
   properties. Send email and phone only as **channels**. Never invent consent.
-- **Consent.** Consent must be confirmed from your backend with the server
-  key. Client code sends email and phone without consent: Whisperr stores
-  them unverified and not opted in. Pass `optedIn: false` only for an opt-out
-  the app records. Never pass `optedIn: true` or `verified: true` from client
-  code, and never use the `phone` shortcut. On the backend, a server SDK
-  `identify` sends the app's own `opted_in` and `verified` flags; that call
-  makes the contact sendable, and SMS needs an explicit `opted_in: true` (see
-  [references/server.md](references/server.md)). If the repository has no
-  backend, list this as a step for the user.
+- **Consent.** Client code sends email and phone without consent by default:
+  Whisperr stores them unverified and not opted in, and your backend confirms
+  consent with the server key. On the backend, a server SDK `identify` sends
+  the app's own `opted_in` and `verified` flags; that call makes the contact
+  sendable, and SMS needs an explicit `opted_in: true` (see
+  [references/server.md](references/server.md)). An app without a backend
+  can opt emails in from client code instead: the owner answers "Does your
+  signup get permission to email users?" in the Whisperr dashboard. With
+  Yes, an email the app sends is opted in. With Per user, only an email sent
+  with the shortcut flag `emailOptedIn: true` is; pass it only when the app
+  itself records that this user agreed to email. Both answers need the
+  minimum SDK versions in the platform reference (web 0.4.0, React Native
+  0.6.0, Flutter 0.7.0, Swift 0.6.0). An earlier opt-out, including the
+  unsubscribe link, is kept. Pass `emailOptedIn: false` (or `optedIn: false`
+  on the channel) for an opt-out the app records. Never opt in a phone or
+  pass `verified: true` from client code, and never use the `phone`
+  shortcut. If the repository has no backend, tell the user to answer the
+  email permission question in the dashboard.
 - **Keys.** Client code (mobile, browser) uses the **publishable** key
   (`wpk_…`). The server key (`wrk_…`) stays on servers, in secrets. Never put
   `wrk_` in app code. Never commit a real key to a tracked file that is not
@@ -147,7 +156,7 @@ Read the latest version from the registry. Never guess a version:
 | Platform | Package | Latest version |
 |---|---|---|
 | Swift | `https://github.com/WhisperrAI/whisperr-swift` (SPM) | `git ls-remote --tags https://github.com/WhisperrAI/whisperr-swift` |
-| React Native / Expo | `@whisperr/react-native` | `npm view @whisperr/react-native version` |
+| React Native / Expo | `@whisperr/react-native` (+ `@whisperr/expo` for push in Expo apps that already use `expo-notifications`) | `npm view @whisperr/react-native version`, `npm view @whisperr/expo version` |
 | Flutter | `whisperr` (pub.dev) | `flutter pub add whisperr` resolves it |
 | Web | `@whisperr/web` | `npm view @whisperr/web version` |
 | React | `@whisperr/react` + `@whisperr/web` | `npm view @whisperr/react version` |
@@ -175,8 +184,11 @@ Every platform needs the same parts:
 2. **Init once** at app start.
 3. **Track.** Add a `track` call at each approved position.
 4. **Push** (only if the app already uses push notifications): see step 7.
-   Report notification taps. Do not add a push library or a permission
-   prompt. Apple App Review guideline 4.5.4 needs consent for promotional
+   Report notification taps. Never add push to an app without it, and never
+   add a permission prompt. Whisperr's own push helper is not a new push
+   library: an Expo app that already uses `expo-notifications` gets
+   `@whisperr/expo` with `requestPermission: false` (see the React Native
+   reference). Apple App Review guideline 4.5.4 needs consent for promotional
    pushes: tell the user to show a line at the permission prompt that says
    notifications may include offers and reminders, and to add an in-app
    toggle to turn them off. When the toggle is off, report `denied` to the
@@ -337,7 +349,8 @@ Print one table: event code · side · file · wired · received. Then list:
   still need a backend,
 - anything the user must do (add a package in Xcode, set the key in the
   hosting provider's environment, connect RevenueCat, rebuild, confirm
-  email/SMS consent from the backend with the server key),
+  email/SMS consent from the backend with the server key, or answer the
+  email permission question in the dashboard when there is no backend),
 - the offer to add the Whisperr block to `AGENTS.md` / `CLAUDE.md` (text in
   the kit's `snippets/` folder:
   https://github.com/WhisperrAI/whisperr-agent-kit/tree/main/snippets).
