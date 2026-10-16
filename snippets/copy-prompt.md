@@ -121,11 +121,12 @@ Steps:
    name, email, phone, address or birth date as traits or event properties.
    No free text from users in properties.
 8. Billing: if the app uses RevenueCat, call Purchases.logIn(user.id) with
-   the same id as identify, and Purchases.logOut() on logout. Do not send
-   subscription events from the app. If the app takes payments another way
-   (Stripe, Adapty, Superwall, app store notifications), do not send
-   subscription events from the app either. Tell me which billing system the
-   app uses.
+   the same id as identify, and Purchases.logOut() on logout. With Superwall
+   or Adapty, call that SDK's identify with the same id, and its reset or
+   logout on logout. Do not send subscription events from the app. If the
+   app takes payments another way (Stripe, app store notifications), do not
+   send subscription events from the app either. Tell me which billing
+   system the app uses.
 9. Push: only when the app already has push notifications. Do not add
    push notifications if the app has none.
    - Expo / React Native: pass the device token to
