@@ -24,7 +24,8 @@ Tell the user how to connect:
    **Project ID** from RevenueCat Project settings → General settings, if
    the dashboard asks for it) and click **Connect**. Whisperr creates its
    webhook in the project and imports the current state of each App Store
-   and Google Play subscription. Imported state never starts a message.
+   and Google Play subscription. Importing does not message anyone about
+   past changes.
 
 Fallback, without an API key: in the same setup, **Set up the webhook by hand
 instead**. The user creates the webhook values in Whisperr, adds a webhook in
