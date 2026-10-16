@@ -74,11 +74,17 @@ Future<void> identifyWhisperrUser(AppUser user) async {
 }
 ```
 
-Client code sends contacts without consent. Whisperr stores them
-unverified and not opted in. Pass `optedIn: false` only when the user opted
-out. Never pass `optedIn: true`, and never use the `phone` shortcut. Consent
-must be confirmed from your backend with the server key
-([server.md](server.md)).
+Client code sends email and phone without `optedIn` by default. Whisperr
+then stores them unverified and not opted in, and your backend confirms
+consent with the server key ([server.md](server.md)). Pass `optedIn: true`
+on the email channel only when the app itself records that this user agreed
+to email (a checked box at signup, an email setting). It counts only when the
+owner answered "Does your signup get permission to email users?" in the
+Whisperr dashboard with Yes or Per user (with Yes, an email the app sends
+counts even without it); otherwise Whisperr ignores it. An earlier opt-out,
+including the unsubscribe link, is kept. Pass `optedIn: false` when the user
+opted out in the app. Never send `optedIn: true` for a phone or `verified:
+true` from client code, and never use the `phone` shortcut.
 
 On logout, in this order:
 

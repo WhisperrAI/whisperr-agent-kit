@@ -160,7 +160,10 @@ key variable. The `whisperr-install` skill offers to do this for you.
   a member approves them in the Whisperr dashboard.
 - The skills tell your agent to send `first_name` as the only name trait and
   to send email and phone only as channels. App code sends them without
-  consent. Consent must be confirmed from your backend with the server key.
+  consent, except an email the app records the user's agreement for, which
+  counts only when you answered "Does your signup get permission to email
+  users?" in the dashboard with Yes or Per user. Otherwise consent is
+  confirmed from your backend with the server key.
 
 Privacy policy: https://whisperr.net/privacy/ · Terms:
 https://whisperr.net/terms/ · Security: https://whisperr.net/security/

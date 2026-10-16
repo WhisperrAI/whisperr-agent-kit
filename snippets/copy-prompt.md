@@ -104,10 +104,13 @@ Steps:
    channels: [.email(user.email)].
    Use the app's stable user id, never the email. Leave out traits and
    channels the app does not have. The app sends contacts without consent:
-   pass optedIn: false only when the user opted out, never optedIn: true,
-   and never the email or phone shortcuts, which opt the contact in.
-   Consent must be confirmed from your backend with the server key. Tell me
-   if the backend needs that change.
+   pass optedIn: false only when the user opted out, and never the phone
+   shortcut. Pass optedIn: true on the email channel only when the app
+   records that this user agreed to email; it counts only when my answer to
+   "Does your signup get permission to email users?" in the Whisperr
+   dashboard is Yes or Per user, and an earlier opt-out is kept. Otherwise
+   consent is confirmed from your backend with the server key. Tell me if
+   the backend needs that change.
 5. On logout: if user_logged_out is in the list, call
    whisperr.track("user_logged_out") first. Then call whisperr.reset().
 6. For each event in the list, call whisperr.track("<code>", { ...plain
@@ -129,7 +132,12 @@ Steps:
    system the app uses.
 9. Push: only when the app already has push notifications. Do not add
    push notifications if the app has none.
-   - Expo / React Native: pass the device token to
+   - Expo with expo-notifications: add @whisperr/expo. After identify, and
+     again right after the app's own permission request, call
+     registerForPushNotifications({ requestPermission: false }); it never
+     shows a prompt. Call useWhisperrNotificationResponse() once in the root
+     layout for notification taps.
+   - Bare React Native or Firebase messaging: pass the device token to
      whisperr.setPushToken(token) only after identify, on every app start
      and on token refresh while a user is signed in. Call
      whisperr.trackPushOpened(response) when the user taps a notification.

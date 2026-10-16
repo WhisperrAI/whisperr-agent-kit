@@ -79,11 +79,17 @@ export function identifyWhisperrUser(user: AppUser) {
 }
 ```
 
-Client code sends contacts without consent. Whisperr stores them
-unverified and not opted in. Pass `optedIn: false` only when the user opted
-out. Never pass `optedIn: true`, and never use the `phone` shortcut. Consent
-must be confirmed from your backend with the server key
-([server.md](server.md)).
+Client code sends email and phone without `optedIn` by default. Whisperr
+then stores them unverified and not opted in, and your backend confirms
+consent with the server key ([server.md](server.md)). Pass `optedIn: true`
+on the email channel only when the app itself records that this user agreed
+to email (a checked box at signup, an email setting). It counts only when the
+owner answered "Does your signup get permission to email users?" in the
+Whisperr dashboard with Yes or Per user (with Yes, an email the app sends
+counts even without it); otherwise Whisperr ignores it. An earlier opt-out,
+including the unsubscribe link, is kept. Pass `optedIn: false` when the user
+opted out in the app. Never send `optedIn: true` for a phone or `verified:
+true` from client code, and never use the `phone` shortcut.
 
 On logout, in this order:
 
@@ -101,14 +107,53 @@ in handlers or after a successful mutation, never in render. It returns
 Screens (only if the event plan has a screen event):
 `whisperr.screen(routeName)` from the navigation state-change callback.
 
-## Push (only if the app already uses expo-notifications or Firebase messaging)
+## Push (only if the app already uses push notifications)
+
+Never add push to an app without it, and never add a permission prompt.
+Whisperr code reads the permission that the app already asks for.
+
+### Expo with expo-notifications: use @whisperr/expo
+
+`@whisperr/expo` is Whisperr's helper on top of the app's own
+`expo-notifications`. It is not a new push library. Read its version with
+`npm view @whisperr/expo version`, then:
+
+`npx expo install @whisperr/expo@<version> expo-constants expo-application`
+
+It needs `@whisperr/react-native` 0.5 or later.
+
+```tsx
+import { registerForPushNotifications } from "@whisperr/expo";
+
+// After identifyWhisperrUser(user), and again right after the app's own
+// permission request:
+void registerForPushNotifications({ requestPermission: false });
+```
+
+- With `requestPermission: false` it never shows a prompt. It reports the
+  permission, sends the token when push is allowed, and keeps both current
+  when the user changes the permission in Settings or the token rotates.
+- It sends the Expo push token. When the app sends through its own APNs key
+  or Firebase project (it calls `getDevicePushTokenAsync()`), pass
+  `tokenType: "device"`, and on Android `providerProject` with the Firebase
+  project id.
+- Its config plugin changes native code and needs a new build. The app
+  already configures `expo-notifications`, so add the plugin only when the
+  user agrees.
+
+Push opens: call `useWhisperrNotificationResponse()` once in the root
+layout (Expo Router `app/_layout.tsx`). It records `push_opened`, including
+the tap that launched the app, and returns the deep link. Route that link
+only if the app already routes from notifications.
+
+### Bare React Native, or Firebase messaging
 
 Send the token only after `identify`. Pass every token to
 `rememberPushToken`. The helper above then sends it on every launch and
 login, and a refresh sends it only while a user is signed in:
 
 ```tsx
-// expo-notifications: pass the token object; the SDK reads its type.
+// expo-notifications without @whisperr/expo: pass the token object; the SDK reads its type.
 useEffect(() => {
   const signedIn = session != null; // the app's own signed-in check
   Notifications.getDevicePushTokenAsync().then((t) => rememberPushToken(t, signedIn));
@@ -120,18 +165,14 @@ useEffect(() => {
 Firebase: `messaging().getToken()` and `messaging().onTokenRefresh()` →
 `rememberPushToken({ token, kind: "fcm" }, signedIn)`.
 
-Push opens (expo-notifications):
-
-```tsx
-useEffect(() => {
-  Notifications.getLastNotificationResponseAsync().then((r) => { if (r) whisperr.trackPushOpened(r); });
-  const sub = Notifications.addNotificationResponseReceivedListener((r) => whisperr.trackPushOpened(r));
-  return () => sub.remove();
-}, []);
-```
-
-Firebase: `messaging().getInitialNotification()` and
+Firebase opens: `messaging().getInitialNotification()` and
 `messaging().onNotificationOpenedApp()` → `whisperr.trackPushOpened(m)`.
+
+### Expo app without push
+
+Add no push code. In your summary, tell the user that `@whisperr/expo` adds
+push (config plugin, EAS push credentials, a new build), and that they choose
+where the OS prompt appears.
 
 ## Build
 
