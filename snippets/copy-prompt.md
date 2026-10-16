@@ -143,15 +143,16 @@ Steps:
    system the app uses.
 9. Push: only when the app already has push notifications. Do not add
    push notifications if the app has none.
-   - Expo: use @whisperr/expo. Add "@whisperr/expo" to plugins in the app
-     config. After identify, and again right after the app's own
-     notification permission request, call
+   - Expo: use @whisperr/expo. After identify, and again right after the
+     app's own notification permission request, call
      registerForPushNotifications({ requestPermission: false }) from
      "@whisperr/expo". It sends the token and the permission to Whisperr
-     and never shows a prompt of its own. In the root layout, call
-     useWhisperrNotificationResponse() and route to its deepLink when the
-     user taps a Whisperr notification. The plugin changes native code, so
-     push needs a new build (eas build).
+     and never shows a prompt of its own. Pass tokenType: "device" when
+     the app sends through its own APNs key or Firebase project. In the
+     root layout, call useWhisperrNotificationResponse() and route to its
+     deepLink when the user taps a Whisperr notification. Add
+     "@whisperr/expo" to plugins in the app config only when I agree to a
+     new build (eas build): the plugin changes native code.
    - Bare React Native: pass the device token to
      whisperr.setPushToken(token) only after identify, on every app start
      and on token refresh while a user is signed in. Call
