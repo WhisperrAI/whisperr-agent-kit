@@ -159,12 +159,15 @@ key variable. The `whisperr-install` skill offers to do this for you.
   tokens), API keys or secrets. Changes to your workspace are proposals until
   a member approves them in the Whisperr dashboard.
 - The skills tell your agent to send `first_name` as the only name trait and
-  to send email and phone only as channels. App code sends them without
-  consent, except an email the app records the user's agreement for, which
-  counts only when you answered "Does your signup get permission to email
-  users?" in the dashboard with Yes or Per user (web 0.4.0, React Native
-  0.6.0, Flutter 0.7.0, Swift 0.6.0 or later). Otherwise consent is
-  confirmed from your backend with the server key.
+  to send email and phone only as channels. When your app asks users
+  whether it may email them, the agent passes their answer as
+  `emailOptedIn`; when it does not ask, the flag is left out, and it is
+  never `true` for a user who did not agree. Your answer to "Does your
+  signup get permission to email users?" in the dashboard decides the rest:
+  Yes opts app-sent emails in unless the user declined, Per user needs the
+  user's yes, and No or no answer leaves consent to your backend with the
+  server key. The skills install the latest SDK version
+  (https://docs.whisperr.net/sdk-versions.json).
 
 Privacy policy: https://whisperr.net/privacy/ · Terms:
 https://whisperr.net/terms/ · Security: https://whisperr.net/security/

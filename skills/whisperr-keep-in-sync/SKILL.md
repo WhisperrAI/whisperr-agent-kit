@@ -24,9 +24,10 @@ touches tracked code.
      start when a user is signed in, with the same stable user id. Traits
      stay within `first_name`, `app_language`, `is_subscriber`,
      `subscription_price`, `subscription_currency` and `plan_period`.
-     Client code still sends email and phone without consent (`optedIn:
-     false` only for an opt-out), except `emailOptedIn: true` on an email
-     the app records the user's agreement for.
+     The email still carries `emailOptedIn` with the user's own answer when
+     the app asks for email permission, and no flag when it does not ask.
+     Never `emailOptedIn: true` for a user who did not agree. No phone
+     opt-in and no `verified: true` from client code.
    - `setPushToken` still runs only after `identify` (on launch and token
      refresh), and not between `reset()` and the next login.
    - Logout still sends `user_logged_out` (when registered) before
@@ -57,9 +58,10 @@ deserves its own event.
 
 ## When upgrading a Whisperr SDK
 
-Read the SDK changelog for breaking changes (for example: React Native 0.3.0
-renamed the `screen()` property to `screen_name`; Swift 0.3.0 added the
-`.retryAfter` transport result). Remove manual calls for events that the SDK
+Install the latest version (https://docs.whisperr.net/sdk-versions.json lists each
+package). Read the SDK changelog between the old and the new version for
+breaking changes (for example, a renamed `screen()` property or a new
+transport result). Remove manual calls for events that the SDK
 now sends by itself (`app_opened`, `app_installed`, `app_updated`,
 `app_backgrounded`). Build and analyze before and after.
 

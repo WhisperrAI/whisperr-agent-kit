@@ -24,13 +24,16 @@ prove that it works. Do the steps in order. Skip a step only where the step says
   [references/server.md](references/server.md)). An app without a backend
   can opt emails in from client code instead: the owner answers "Does your
   signup get permission to email users?" in the Whisperr dashboard. With
-  Yes, an email the app sends is opted in. With Per user, only an email sent
-  with the shortcut flag `emailOptedIn: true` is; pass it only when the app
-  itself records that this user agreed to email. Both answers need the
-  minimum SDK versions in the platform reference (web 0.4.0, React Native
-  0.6.0, Flutter 0.7.0, Swift 0.6.0). An earlier opt-out, including the
-  unsubscribe link, is kept. Pass `emailOptedIn: false` (or `optedIn: false`
-  on the channel) for an opt-out the app records. Never opt in a phone or
+  Yes, an email the app sends is opted in unless `emailOptedIn` is `false`.
+  With Per user, only an email sent with `emailOptedIn: true` is. With No,
+  or no answer yet, client code opts nothing in. So: when the app asks users
+  whether it may email them (a signup checkbox, an email setting), pass
+  their answer as `emailOptedIn` (`true` when they agreed, `false` when they
+  declined or turned it off). When the app does not ask, leave
+  `emailOptedIn` out. Never pass `true` for a user who did not agree.
+  `emailOptedIn` needs a recent SDK: install the latest version
+  (https://docs.whisperr.net/sdk-versions.json). An earlier opt-out, including the
+  unsubscribe link, is kept. Never opt in a phone or
   pass `verified: true` from client code, and never use the `phone`
   shortcut. If the repository has no backend, tell the user to answer the
   email permission question in the dashboard.
@@ -59,7 +62,11 @@ Look for the Whisperr MCP tools (server name `whisperr`, endpoint
 to connect (see the "Connect" section of
 https://docs.whisperr.net/agents/) and continue in **manual mode**: do steps
 3 to 8, ask the user for the publishable key, skip every MCP call, and let
-the user check the events in the Whisperr dashboard.
+the user check the events in the Whisperr dashboard. The no-MCP guide
+https://docs.whisperr.net/setup.md describes the same install without the
+MCP server; read it in manual mode. When the user pasted a copy prompt from
+the dashboard (lines such as `Platform:`, `Email permission:` and `Main
+action in this app:`), use those answers.
 
 The first MCP call opens a browser sign-in for the user's Whisperr app.
 Reads need `data:read`. Registration and deployment reports (steps 9 and 10)
@@ -109,7 +116,7 @@ The result has `profile` (`b2c_sub` or `generic`), `work_order`,
 | `side` | `frontend`, `backend` or `both`. Wire only the sides that this repository has |
 | `slot` | The role of the event in the model. Keep it for registration |
 | `source`, `registered` | `registered`, `universe` or `floor`. `registered: true` needs no registration |
-| `code_is_example`, `example_codes` | `code_is_example: true` marks the core value event. Its `code` is empty and `example_codes` lists sample names (`lesson_completed`, `workout_logged`, `recipe_cooked`, `episode_finished`). Do not copy a sample. Pick the app's real value event name. When a universe or registered code in the work order means this action, use that code. Otherwise register a new code with slot `core_value` |
+| `code_is_example`, `example_codes` | `code_is_example: true` marks the core value event. Its `code` is empty and `example_codes` lists sample names from other kinds of apps. Do not copy a sample, even when one looks close. Name the app's own value action from its code and business context. When a universe or registered code in the work order means this action, use that code. Otherwise register a new code with slot `core_value` |
 | `payload_schema`, `payload_schema_format` | `json_schema` is JSON Schema; `field_types` maps each property name to its type (`{"field": "string"}`); `field_descriptions` maps each property name to a description. Send only those names |
 | `status` | `wired`: do nothing. `reported`: a deployment report claims it; confirm the call in the code. `open`: wire it. `agent_decides`: wire it when this app has the action, else skip and say why. `covered_by_billing_source`: a connected billing source sends it; do not wire it |
 | `satisfied_by` | The billing provider that covers this item (for example `revenuecat`). Do not wire the item yourself |
@@ -137,8 +144,9 @@ the side. `priority_codes` is the full must-have and strong set; wire
    not render.
 2. **Propose more tailored events.** Whisperr predicts better with many
    tailored events. Each one is one real user action at its success path,
-   with typed properties (`lesson_completed`, `workout_logged`,
-   `item_saved`). Do not keep the list small on purpose. After the work
+   with typed properties. Name it after this app's own action (for
+   example, a notes app might have `note_shared`, a booking app
+   `booking_confirmed`, a game `level_completed`). Do not keep the list small on purpose. After the work
    order, look for other real actions in this repository and propose them to
    the user as **one** list: code, file, trigger, properties. Add only the
    events that the user approves. Never add an event without asking.
@@ -146,12 +154,16 @@ the side. `priority_codes` is the full must-have and strong set; wire
    edit.
 
 Do not wire the automatic events (`app_installed`, `app_updated`,
-`app_opened`, `app_backgrounded`) on Swift 0.3+, React Native 0.3+ and
-Flutter 0.4+. The SDK sends them.
+`app_opened`, `app_backgrounded`) on Swift, React Native and Flutter. The
+current SDKs send them. When the app pins an old SDK, upgrade it (step 5).
 
 ## 5. Install the SDK
 
-Read the latest version from the registry. Never guess a version:
+Install the latest version. Read it from the registry, and never guess or
+copy a version from older text. https://docs.whisperr.net/sdk-versions.json
+lists each package with its latest version and the minimum version for
+email consent (`email_consent_min`). When the app pins an older version,
+upgrade it and say so in your summary.
 
 | Platform | Package | Latest version |
 |---|---|---|
@@ -228,14 +240,19 @@ and call it from each place below.
    | `plan_period` | `week`, `month`, `year` or `lifetime` |
 
    Never email, phone, address or birth date as traits.
-3. **Push token after identify** (only if the app already uses push). Call
+3. **Email** (only if the app has the user's email). Pass it as `email` on
+   `identify`, not as a trait. When the app asks users whether it may email
+   them, add `emailOptedIn` with their answer. When it does not ask, leave
+   `emailOptedIn` out (see the consent rule at the top). The platform
+   reference shows the call.
+4. **Push token after identify** (only if the app already uses push). Call
    `setPushToken` after `identify` in the helper, on every launch, and on
    token refresh while a user is signed in. Keep the latest token in memory
    so the helper can send it.
-4. **Logout.** In this order: `track("user_logged_out")` (only when it is in
+5. **Logout.** In this order: `track("user_logged_out")` (only when it is in
    the work order), then `reset()`. After `reset()`, set the push token again
    only when the next user logs in.
-5. **RevenueCat, Superwall or Adapty** (only if the app already uses it):
+6. **RevenueCat, Superwall or Adapty** (only if the app already uses it):
    follow [references/revenuecat.md](references/revenuecat.md),
    [references/superwall.md](references/superwall.md) or
    [references/adapty.md](references/adapty.md). That SDK's login call gets
