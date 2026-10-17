@@ -1,0 +1,208 @@
+id: expo-fitness
+platform: react-native
+sdk_packages: ["@whisperr/react-native"]
+build_checks: ["npm run lint", "npx tsc --noEmit"]
+# Event codes the SDK sends itself (whisperr-react-native src/autocapture.ts).
+# Lifecycle ones are automatic; screen_viewed comes from whisperr.screen() and
+# the push ones from the push helpers. A manual track() of any of them is a defect.
+auto_events: [app_installed, app_updated, app_opened, app_backgrounded, screen_viewed, push_opened, push_permission_changed]
+
+plan:
+  - code: signup_completed
+    name: Signup completed
+    tier: must_have
+    wireable_on: frontend
+    payload_schema:
+      type: object
+      properties: {method: {type: string, enum: [email]}}
+      required: [method]
+      additionalProperties: false
+    expect:
+      files_any: ["src/state/AuthContext.tsx", "src/screens/auth/SignupScreen.tsx", "src/api/auth.ts"]
+      fires_on: [signup_ok, signup_ok_noconsent]
+      not_on: [signup_taken]
+      props: {method: string}
+
+  - code: workout_logged
+    name: Workout logged
+    tier: must_have
+    wireable_on: frontend
+    payload_schema:
+      type: object
+      properties:
+        workout_type: {type: string, enum: [strength, run, hiit, yoga]}
+        duration_minutes: {type: integer, minimum: 1, maximum: 600}
+      required: [workout_type, duration_minutes]
+      additionalProperties: false
+    expect:
+      files_any: ["src/state/WorkoutsContext.tsx", "src/screens/main/LogWorkoutScreen.tsx", "src/api/workouts.ts"]
+      fires_on: [core_action_x3]
+      times: {core_action_x3: 3}   # the step logs three workouts
+      not_on: [onboarding_done, paywall_view]
+      props: {workout_type: string, duration_minutes: integer}
+
+  - code: subscription_started
+    name: Subscription started
+    tier: must_have
+    wireable_on: frontend
+    payload_schema:
+      type: object
+      properties:
+        plan_id: {type: string, enum: [pro_monthly, pro_annual]}
+        price_cents: {type: integer}
+        currency: {type: string}
+        billing_period: {type: string, enum: [month, year]}
+      required: [plan_id, price_cents, currency, billing_period]
+      additionalProperties: false
+    expect:
+      files_any: ["src/state/SubscriptionContext.tsx", "src/screens/billing/CheckoutScreen.tsx", "src/api/billing.ts"]
+      fires_on: [purchase_ok]
+      not_on: [paywall_view, purchase_declined]
+      props: {plan_id: string, price_cents: integer, currency: string, billing_period: string}
+
+  - code: subscription_cancelled
+    name: Subscription cancelled
+    tier: must_have
+    wireable_on: frontend
+    payload_schema:
+      type: object
+      properties:
+        plan_id: {type: string, enum: [pro_monthly, pro_annual]}
+        reason: {type: string, enum: [too_expensive, not_using, missing_features, switching_app, other]}
+      required: [plan_id, reason]
+      additionalProperties: false
+    expect:
+      files_any: ["src/state/SubscriptionContext.tsx", "src/screens/billing/CancelSubscriptionScreen.tsx", "src/api/billing.ts"]
+      fires_on: [cancel_with_reason]
+      not_on: [purchase_ok, logout]
+      props: {plan_id: string, reason: string}
+
+  - code: onboarding_completed
+    name: Onboarding completed
+    tier: strong
+    wireable_on: frontend
+    payload_schema:
+      type: object
+      properties:
+        goal: {type: string, enum: [build_strength, lose_weight, run_faster, stay_active]}
+        experience_level: {type: string, enum: [beginner, intermediate, advanced]}
+        weekly_target: {type: integer, minimum: 2, maximum: 5}
+      required: [goal, experience_level, weekly_target]
+      additionalProperties: false
+    expect:
+      files_any: ["src/screens/onboarding/OnboardingScreen.tsx", "src/state/AuthContext.tsx", "src/api/auth.ts"]
+      fires_on: [onboarding_done]
+      not_on: [signup_ok, signup_ok_noconsent]
+      props: {goal: string, experience_level: string, weekly_target: integer}
+
+  - code: paywall_viewed
+    name: Paywall viewed
+    tier: strong
+    wireable_on: frontend
+    payload_schema:
+      type: object
+      properties: {source: {type: string, enum: [home_banner, history_insights, premium_program, profile]}}
+      required: [source]
+      additionalProperties: false
+    expect:
+      files_any: ["src/screens/billing/PaywallScreen.tsx"]
+      fires_on: [paywall_view]
+      not_on: [purchase_declined, purchase_ok]
+      props: {source: string}
+
+  - code: payment_failed
+    name: Payment failed
+    tier: strong
+    wireable_on: frontend
+    payload_schema:
+      type: object
+      properties:
+        plan_id: {type: string, enum: [pro_monthly, pro_annual]}
+        reason: {type: string}
+      required: [plan_id, reason]
+      additionalProperties: false
+    expect:
+      files_any: ["src/state/SubscriptionContext.tsx", "src/screens/billing/CheckoutScreen.tsx", "src/api/billing.ts"]
+      fires_on: [purchase_declined]
+      not_on: [purchase_ok, paywall_view]
+      props: {plan_id: string, reason: string}
+
+  - code: logged_in
+    name: Logged in
+    tier: strong
+    wireable_on: frontend
+    payload_schema:
+      type: object
+      properties: {method: {type: string, enum: [email]}}
+      required: [method]
+      additionalProperties: false
+    expect:
+      files_any: ["src/state/AuthContext.tsx", "src/screens/auth/LoginScreen.tsx", "src/api/auth.ts"]
+      fires_on: [login_ok]
+      not_on: [restore, signup_ok, signup_ok_noconsent, signup_taken]   # a session restore is not a login
+      props: {method: string}
+
+  - code: program_viewed
+    name: Program viewed
+    tier: plausible
+    wireable_on: frontend
+    payload_schema:
+      type: object
+      properties: {program_id: {type: string}}
+      required: [program_id]
+      additionalProperties: false
+    expect:
+      files_any: ["src/screens/main/ProgramDetailScreen.tsx"]
+      fires_on: [anon_browse, logout, signup_ok_noconsent]
+      not_on: [core_action_x3]
+      props: {program_id: string}
+
+  - code: checkout_started
+    name: Checkout started
+    tier: plausible
+    wireable_on: frontend
+    payload_schema:
+      type: object
+      properties:
+        plan_id: {type: string, enum: [pro_monthly, pro_annual]}
+        source: {type: string, enum: [home_banner, history_insights, premium_program, profile]}
+      required: [plan_id]
+      additionalProperties: false
+    expect:
+      files_any: ["src/screens/billing/PaywallScreen.tsx", "src/screens/billing/CheckoutScreen.tsx", "src/state/SubscriptionContext.tsx"]
+      fires_on: [purchase_declined]
+      not_on: [paywall_view, purchase_ok]   # purchase_ok retries the card on the open checkout
+      props: {plan_id: string}
+
+unplanned:
+  - code: onboarding_skipped
+  - code: logged_out
+
+identity:
+  user_id_from: fake_backend
+  # Deterministic per email (src/api/mockServer.ts userIdForEmail).
+  expected_user_ids:
+    signup_ok: usr_340ea6c68e1f5eb8           # jane.eval@example.com
+    signup_ok_noconsent: usr_c176f3c092ddd43e  # sam.noconsent@example.com
+  identify_after: [signup_ok, login_ok, restore, signup_ok_noconsent]
+  reset_after: [logout]
+  # Jane logs back in during login_ok, so anonymous stitching moves the logout
+  # step's events onto her whether or not the SDK was reset. The reset is
+  # checked where a different person signs up next: in signup_ok_noconsent the
+  # driver marks logout_at, cycles the app through background/foreground (the
+  # SDK's own lifecycle events) and browses a program before Sam signs up.
+  # Every event from logout_at to the end of that step must not resolve to
+  # signup_ok's user.
+  reset_check: {step: signup_ok_noconsent, after_mark: logout_at, not_user_of: signup_ok}
+  anonymous_before: [anon_browse, signup_taken]
+  consent:
+    opt_in_step: signup_ok
+    opt_out_step: signup_ok_noconsent
+    # The SDK's identify({email}) shortcut omits opted_in, which the server
+    # stores as opted_in=true; it creates a consented channel too.
+
+pii_sentinels: ["jane.eval@example.com", "Jane Evalson", "Evalson", "+15555550123", "221B Eval Street", "sam.noconsent@example.com", "Sam Optout", "Optout"]
+# Free text the driver types (workout notes, cancel feedback); it must never be sent.
+free_text_sentinels: ["Felt strong", "Money is tight this month"]
+allowed_traits: [first_name]
+flows: [anon_browse, signup_taken, signup_ok, onboarding_done, core_action_x3, paywall_view, purchase_declined, purchase_ok, cancel_with_reason, logout, login_ok, restore, signup_ok_noconsent]
