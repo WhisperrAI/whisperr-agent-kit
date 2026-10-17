@@ -147,7 +147,9 @@ the side. `priority_codes` is the full must-have and strong set; wire
 
 Do not wire the automatic events (`app_installed`, `app_updated`,
 `app_opened`, `app_backgrounded`) on Swift 0.3+, React Native 0.3+ and
-Flutter 0.4+. The SDK sends them.
+Flutter 0.4+. The SDK sends them. Swift 0.7+, React Native 0.7+ and Flutter
+0.8+ also send `app_error` and `app_crashed`: never `track()` these names. To
+report an error the app handles, call the SDK's `trackError()`.
 
 ## 5. Install the SDK
 

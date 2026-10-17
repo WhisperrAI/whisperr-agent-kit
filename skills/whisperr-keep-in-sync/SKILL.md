@@ -61,7 +61,9 @@ Read the SDK changelog for breaking changes (for example: React Native 0.3.0
 renamed the `screen()` property to `screen_name`; Swift 0.3.0 added the
 `.retryAfter` transport result). Remove manual calls for events that the SDK
 now sends by itself (`app_opened`, `app_installed`, `app_updated`,
-`app_backgrounded`). Build and analyze before and after.
+`app_backgrounded`, and from Swift 0.7, React Native 0.7 and Flutter 0.8 also
+`app_error` and `app_crashed`). Replace a manual `track()` of an app error
+with the SDK's `trackError()`. Build and analyze before and after.
 
 ## Verify
 
