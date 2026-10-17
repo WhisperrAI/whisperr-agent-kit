@@ -22,6 +22,7 @@ jobs:
           python-version: "3.12"
       - run: pip install "jsonschema[format]>=4.23" pyyaml
       - run: python3 scripts/validate.py --require-schema
+      - run: python3 -m unittest discover -s scripts -p '*_test.py'
 
   claude-plugin:
     name: Claude Code plugin validate

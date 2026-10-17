@@ -1,4 +1,4 @@
-# Web, React, Next.js (@whisperr/web 0.2+)
+# Web, React, Next.js
 
 Sources: https://docs.whisperr.net/sdks/web/,
 https://docs.whisperr.net/sdks/react/, https://docs.whisperr.net/sdks/next/
@@ -56,30 +56,38 @@ whisperr.identify(user.id, {
     first_name: user.firstName,
     is_subscriber: user.isSubscriber,
     // only when the app knows them:
-    app_language: user.contentLanguage, // the in-app choice, not navigator.language
+    app_language: user.appLanguage, // the in-app choice, not navigator.language
     subscription_price: 9.99,
     subscription_currency: "USD",
     plan_period: "month",
   },
-  channels: [{ type: "email", address: user.email }], // only if the app has email
+  // only if the app has the user's email:
+  email: user.email,
+  // only when the app asks users for email permission: their answer
+  emailOptedIn: user.emailPermission, // true or false; leave out when the app does not ask
 });
 ```
 
-Client code sends email and phone without consent by default. Whisperr
-then stores them unverified and not opted in, and your backend confirms
-consent with the server key ([server.md](server.md)).
+Email permission: when the app asks users whether it may email them (a
+checkbox at signup, an email setting), pass their answer as `emailOptedIn`:
+`true` when they agreed, `false` when they declined or turned it off. When
+the app does not ask, leave `emailOptedIn` out. Never pass `true` for a user
+who did not agree. Pass the address as `email`, as above: the flag applies
+to that address only.
 
-An app without a backend can opt its users' emails in instead. The owner
-answers "Does your signup get permission to email users?" in the Whisperr
-dashboard. With **Yes**, an email the app sends is opted in. With **Per
-user**, only an email sent with the shortcut flag is: `whisperr.identify(user.id, { email: user.email, emailOptedIn: true })`,
-and only when the app itself records that this user agreed to email (a
-checked box at signup, an email setting). Pass `emailOptedIn: false` when the
-user opted out in the app. An earlier opt-out, including the unsubscribe
-link, is kept. Both answers need `@whisperr/web` 0.4.0 (also `@whisperr/react` and `@whisperr/next` 0.4.0) or later: install at least that
-version, and say so in your summary if the app pins an older one. Never send
-`verified: true` or opt in a phone from client code, and never use the
-`phone` shortcut.
+The owner's answer to "Does your signup get permission to email users?" in
+the Whisperr dashboard decides what the address gets. With **Yes**, it is
+opted in unless `emailOptedIn` is `false`. With **Per user**, only
+`emailOptedIn: true` opts it in. With **No**, with no answer yet, or when
+the app requires the server key for email, client code
+opts nothing in and your backend confirms consent with the server key
+([server.md](server.md)). An earlier opt-out, including the unsubscribe
+link, is kept.
+
+`emailOptedIn` needs a recent `@whisperr/web` (and `@whisperr/react`, `@whisperr/next`): install the latest version
+(https://docs.whisperr.net/sdk-versions.json lists it), and say so in your summary if the app pins an older one.
+Never send `verified: true` or opt in a phone from client code, and never
+use the `phone` shortcut.
 
 On logout, in this order:
 
@@ -90,8 +98,9 @@ whisperr.reset();
 
 ## Track
 
-`whisperr.track("checkout_started", { cart_value: 49 });` in handlers or
-after a successful request. Do not `await` it. Page views are captured
+Use the event codes from the work order. For example, a project tool might
+send `whisperr.track("project_created", { template: "kanban" });`. Call it in
+handlers or after a successful request. Do not `await` it. Page views are captured
 automatically; do not add them.
 
 ## Build

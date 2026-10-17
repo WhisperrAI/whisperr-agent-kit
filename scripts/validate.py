@@ -4,7 +4,8 @@
 Checks JSON syntax, the vendored JSON schemas (Agent Plugins 1.0.0 and
 MCP Registry server.json), skill and rule front matter, cross-file
 consistency (name, version, MCP URL), OpenAI listing limits, and the Claude
-directory file rules. Exit code 1 on any error.
+directory file rules, and that skill text names no literal Whisperr SDK
+version. Exit code 1 on any error.
 
 Usage: python3 scripts/validate.py [--require-schema]
 Needs: PyYAML; jsonschema for schema checks (required with --require-schema).
@@ -287,6 +288,43 @@ def check_directory_files() -> None:
         err("LICENSE missing")
 
 
+# Skill text says "install the latest version" and links the version manifest
+# (https://docs.whisperr.net/sdk-versions.json). A version typed into the text
+# goes stale, or names a release that is not published yet.
+VERSION_TEXT_GLOBS = ("skills/**/*.md", "rules/*.mdc", "snippets/*.md", "README.md")
+# "0.6.0", "v0.6.0", "0.4+" and "0.5 or later"; not inside URLs or longer
+# dotted numbers.
+VERSION_RE = re.compile(
+    r"(?<![\w./])v?\d+\.\d+(?:\.\d+)?\+"
+    r"|(?<![\w./])v?\d+\.\d+\.\d+(?![\w.])"
+    r"|(?<![\w./])v?\d+\.\d+(?=\s+or\s+(?:later|newer|above))"
+)
+# Versions of other products that skill text may name, as the exact phrase.
+VERSION_ALLOWED = ("App Review guideline 4.5.4", "Flutter 3.19+")
+
+
+def version_findings(text: str) -> list[tuple[int, str]]:
+    """Return (line, version) for each literal SDK version in the text."""
+    found = []
+    for m in VERSION_RE.finditer(text):
+        before = text[max(0, m.start() - 40):m.end()]
+        if before.endswith(VERSION_ALLOWED):
+            continue
+        found.append((text.count("\n", 0, m.start()) + 1, m.group(0)))
+    return found
+
+
+def check_no_sdk_versions() -> None:
+    for pattern in VERSION_TEXT_GLOBS:
+        for p in sorted(ROOT.glob(pattern)):
+            rel = p.relative_to(ROOT)
+            for line, version in version_findings(p.read_text(encoding="utf-8")):
+                err(
+                    f"{rel}:{line}: literal version '{version}'. Say 'install the latest version' "
+                    "and link https://docs.whisperr.net/sdk-versions.json instead"
+                )
+
+
 def main() -> int:
     require = "--require-schema" in sys.argv
     try:
@@ -301,6 +339,7 @@ def main() -> int:
     check_skills(yaml)
     check_rules(yaml)
     check_directory_files()
+    check_no_sdk_versions()
     for w in warnings:
         print(f"warning: {w}")
     for e in errors:
