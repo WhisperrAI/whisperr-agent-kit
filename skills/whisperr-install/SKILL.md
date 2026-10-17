@@ -155,7 +155,10 @@ the side. `priority_codes` is the full must-have and strong set; wire
 
 Do not wire the automatic events (`app_installed`, `app_updated`,
 `app_opened`, `app_backgrounded`) on Swift, React Native and Flutter. The
-current SDKs send them. When the app pins an old SDK, upgrade it (step 5).
+current SDKs send them. Newer SDKs also send `app_error` and
+`app_crashed`: never `track()` these names. To report an error the app
+handles, call the SDK's `trackError()`. When the app pins an old SDK,
+upgrade it (step 5).
 
 ## 5. Install the SDK
 
