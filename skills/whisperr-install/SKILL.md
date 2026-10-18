@@ -104,6 +104,16 @@ Call `get_required_events` and `get_workspace_context`. Use event codes
 exactly. An anchor (`AnchorFile`, `AnchorSymbol`) is a hint; confirm it in
 the code.
 
+Current servers return a **compact** work order (it has a `details` field):
+short rows without guide prose or most `payload_schema` values. Read it
+inline. Then call `get_event_guide` **once** with `slots` (every guide
+slot you will wire, plus the `nice` slots that fit this app) and `codes`
+(work-order codes whose `description` or `payload_schema` you need). It
+returns the full guides (when and where to fire, server or app, the
+property names the engine reads) and the full work-order items. Older
+servers return everything in `get_required_events` and have no
+`get_event_guide`; then read the same fields from that response.
+
 ### 4a. Servers with a work order
 
 The result has `profile` (`b2c_sub` or `generic`), `work_order`,
@@ -117,7 +127,7 @@ The result has `profile` (`b2c_sub` or `generic`), `work_order`,
 | `slot` | The role of the event in the model. Keep it for registration |
 | `source`, `registered` | `registered`, `universe` or `floor`. `registered: true` needs no registration |
 | `code_is_example`, `example_codes` | `code_is_example: true` marks the core value event. Its `code` is empty and `example_codes` lists sample names from other kinds of apps. Do not copy a sample, even when one looks close. Name the app's own value action from its code and business context. When a universe or registered code in the work order means this action, use that code. Otherwise register a new code with slot `core_value` |
-| `payload_schema`, `payload_schema_format` | `json_schema` is JSON Schema; `field_types` maps each property name to its type (`{"field": "string"}`); `field_descriptions` maps each property name to a description. Send only those names |
+| `payload_schema`, `payload_schema_format` | In the compact work order only registered items carry it: a registered event's schema is what the app must send, so send exactly those names. For other items `get_event_guide` returns a template. `json_schema` is JSON Schema; `field_types` maps each property name to its type (`{"field": "string"}`); `field_descriptions` maps each property name to a description |
 | `status` | `wired`: do nothing. `reported`: a deployment report claims it; confirm the call in the code. `open`: wire it. `agent_decides`: wire it when this app has the action, else skip and say why. `covered_by_billing_source`: a connected billing source sends it; do not wire it |
 | `satisfied_by` | The billing provider that covers this item (for example `revenuecat`). Do not wire the item yourself |
 | `condition` | Wire the item only when this condition is true for this app. The backend billing events carry a condition; the `billing` install step (step 8) decides them |
@@ -137,21 +147,36 @@ tells you if it is wired, and `wireable_on` (`frontend` or `backend`) gives
 the side. `priority_codes` is the full must-have and strong set; wire
 `unwired_priority_codes` first. Register only events that you add or change.
 
-### 4c. Locate each event
+### 4c. Map the app, answer the guides, locate each event
 
-1. Find where each event really happens: the success path of the action
+1. **Map the app first** (a few minutes, not a full audit): the main
+   screens or routes, the core loop (the action users come back for), the
+   money touchpoints (paywall, purchases, tips, credit packs) and server
+   jobs or webhooks. Keep it to a short list.
+2. **Answer every `must` and `should` guide** in `event_guides`, and the
+   `nice` guides that fit this kind of app (a streak app has streaks, a
+   social app has invites). Each answer is either **present**, with the
+   file and function where it happens, or **absent**, with a one-line
+   reason. Never fake an event or wire one the code cannot reach. Register
+   a present one with the guide's `slot`.
+3. **Money.** With a paywall, track `paywall_viewed` (with its placement)
+   and register it with slot `none`. Without a paywall, track where money
+   really changes hands in the app: one-off in-app purchases, tips, credit
+   or coin packs. Subscription billing itself comes from step 8.
+4. **Properties.** Use the property names from the guide or work order
+   (the engine reads names such as `lifetime_count`, `is_first_ever`,
+   `streak_length` and `trial_ends_at`) and fill each one from a real
+   variable in the code. Leave out a property the code does not have; never
+   invent a value.
+5. Find where each event really happens: the success path of the action
    (after the API call, save or purchase succeeds), not the button tap and
    not render.
-2. **Propose more tailored events.** Whisperr predicts better with many
-   tailored events. Each one is one real user action at its success path,
-   with typed properties. Name it after this app's own action (for
-   example, a notes app might have `note_shared`, a booking app
-   `booking_confirmed`, a game `level_completed`). Do not keep the list small on purpose. After the work
-   order, look for other real actions in this repository and propose them to
-   the user as **one** list: code, file, trigger, properties. Add only the
-   events that the user approves. Never add an event without asking.
-3. Show the user the final list (event code, file, trigger, side) before you
-   edit.
+6. **Extra events.** Map each other moment to an existing slot first. Then
+   offer at most 3 extra events that fit no slot, ranked, each with one
+   line on why it helps retention. Add only the ones the user approves.
+   Do not pad: more than about 35 events in total means you should cut.
+7. Show the user the final list (event code, file, trigger, side) and the
+   absent guides with their reasons before you edit.
 
 Do not wire the automatic events (`app_installed`, `app_updated`,
 `app_opened`, `app_backgrounded`) on Swift, React Native and Flutter. The
@@ -213,8 +238,9 @@ Every platform needs the same parts:
 
 ## 6. Minimize payloads
 
-Each `track` call sends only the properties in the event's
-`payload_schema`: ids, plan, amounts, counts, reasons. Use the right types
+Each `track` call sends only the properties that you register in the
+event's `payload_schema` (step 9), and each of those properties comes from
+the code: ids, plan, amounts, counts, reasons. Use the right types
 (numbers as numbers, booleans as booleans). No PII, no free text from users.
 Whisperr drops property keys named like personal data (email, phone, name)
 at ingest, so such a property never arrives.
@@ -323,9 +349,13 @@ already registered. Otherwise, with `install:write`:
    draft again without them.
 3. `begin_registration_validation` with the draft's `revision_id`. The draft
    is now frozen.
-4. `submit_isolated_test_event` once for each event in the draft, with
+4. Send one synthetic test event for every event in the draft, with
    synthetic properties only (no names, emails or tokens) and a new
-   `operation_id` each time. Test events never create live users.
+   `operation_id` for each event. Fill every property you registered, so
+   the test proves the schema. When the server offers
+   `submit_isolated_test_events`, send them all in one call (up to 50
+   events). Otherwise call `submit_isolated_test_event` for each one. Test
+   events never create live users.
 5. `get_registration` returns the `gaps`. Repair each gap. A schema change
    after step 3 needs a new draft.
 6. `commit_registration`. If it reports `validation_incomplete`, read the
@@ -364,7 +394,9 @@ events arrive.
 Print one table: event code · side · file · wired · received. Then list:
 
 - the commands you ran and their before/after result,
-- the registration `revision_id`, if you made one,
+- the registration `revision_id`, if you made one, and the coverage that
+  `commit_registration` returns when the server includes it,
+- each `must` and `should` guide that you marked absent, with its reason,
 - the billing state: source connected, server events wired, or events that
   still need a backend,
 - anything the user must do (add a package in Xcode, set the key in the
