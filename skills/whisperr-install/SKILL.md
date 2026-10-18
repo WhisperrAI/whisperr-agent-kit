@@ -106,12 +106,13 @@ the code.
 
 Current servers return a **compact** work order (it has a `details` field):
 short rows without guide prose or most `payload_schema` values. Read it
-inline. Then call `get_event_guide` **once** with `slots` (every guide
-slot you will wire, plus the `nice` slots that fit this app) and `codes`
-(work-order codes whose `description` or `payload_schema` you need). It
-returns the full guides (when and where to fire, server or app, the
-property names the engine reads) and the full work-order items. Older
-servers return everything in `get_required_events` and have no
+inline. After you map the app (4c step 1), call `get_event_guide` **once**
+with `slots` (the guide slots you will wire, the `must` and `should` slots
+whose title alone you cannot answer, and the `nice` slots that fit this
+app) and `codes` (work-order codes whose `description` or `payload_schema`
+you need). It returns the full guides (when and where to fire, server or
+app, the property names the engine reads) and the full work-order items.
+Older servers return everything in `get_required_events` and have no
 `get_event_guide`; then read the same fields from that response.
 
 ### 4a. Servers with a work order
@@ -127,7 +128,7 @@ The result has `profile` (`b2c_sub` or `generic`), `work_order`,
 | `slot` | The role of the event in the model. Keep it for registration |
 | `source`, `registered` | `registered`, `universe` or `floor`. `registered: true` needs no registration |
 | `code_is_example`, `example_codes` | `code_is_example: true` marks the core value event. Its `code` is empty and `example_codes` lists sample names from other kinds of apps. Do not copy a sample, even when one looks close. Name the app's own value action from its code and business context. When a universe or registered code in the work order means this action, use that code. Otherwise register a new code with slot `core_value` |
-| `payload_schema`, `payload_schema_format` | In the compact work order only registered items carry it: a registered event's schema is what the app must send, so send exactly those names. For other items `get_event_guide` returns a template. `json_schema` is JSON Schema; `field_types` maps each property name to its type (`{"field": "string"}`); `field_descriptions` maps each property name to a description |
+| `payload_schema`, `payload_schema_format` | The compact work order has it on registered items and on schemas with required properties. It is an allowlist: send no other property, always send the required ones, and send an optional one only when the code has a real value. For other items `get_event_guide` returns a template. `json_schema` is JSON Schema; `field_types` maps each property name to its type (`{"field": "string"}`); `field_descriptions` maps each property name to a description |
 | `status` | `wired`: do nothing. `reported`: a deployment report claims it; confirm the call in the code. `open`: wire it. `agent_decides`: wire it when this app has the action, else skip and say why. `covered_by_billing_source`: a connected billing source sends it; do not wire it |
 | `satisfied_by` | The billing provider that covers this item (for example `revenuecat`). Do not wire the item yourself |
 | `condition` | Wire the item only when this condition is true for this app. The backend billing events carry a condition; the `billing` install step (step 8) decides them |
@@ -155,10 +156,15 @@ the side. `priority_codes` is the full must-have and strong set; wire
    jobs or webhooks. Keep it to a short list.
 2. **Answer every `must` and `should` guide** in `event_guides`, and the
    `nice` guides that fit this kind of app (a streak app has streaks, a
-   social app has invites). Each answer is either **present**, with the
-   file and function where it happens, or **absent**, with a one-line
-   reason. Never fake an event or wire one the code cannot reach. Register
-   a present one with the guide's `slot`.
+   social app has invites), by its `status`:
+   - `found`: its `events` are already mapped. Reuse them; register
+     nothing new.
+   - `from_billing_source`: the billing source sends it. Never wire it.
+   - `does_not_apply`: nothing to do.
+   - any other status, or none: **present**, with the file and function
+     where it happens (register it with the guide's `slot`), or **absent**,
+     with a one-line reason.
+   Never fake an event or wire one the code cannot reach.
 3. **Money.** With a paywall, track `paywall_viewed` (with its placement)
    and register it with slot `none`. Without a paywall, track where money
    really changes hands in the app: one-off in-app purchases, tips, credit
@@ -166,8 +172,10 @@ the side. `priority_codes` is the full must-have and strong set; wire
 4. **Properties.** Use the property names from the guide or work order
    (the engine reads names such as `lifetime_count`, `is_first_ever`,
    `streak_length` and `trial_ends_at`) and fill each one from a real
-   variable in the code. Leave out a property the code does not have; never
-   invent a value.
+   variable in the code. Keep every required property. Leave out an
+   optional property the code does not have; never invent a value. Note
+   the file and line of each event and of the variable behind each
+   property for your list and summary.
 5. Find where each event really happens: the success path of the action
    (after the API call, save or purchase succeeds), not the button tap and
    not render.
@@ -350,12 +358,16 @@ already registered. Otherwise, with `install:write`:
 3. `begin_registration_validation` with the draft's `revision_id`. The draft
    is now frozen.
 4. Send one synthetic test event for every event in the draft, with
-   synthetic properties only (no names, emails or tokens) and a new
-   `operation_id` for each event. Fill every property you registered, so
-   the test proves the schema. When the server offers
-   `submit_isolated_test_events`, send them all in one call (up to 50
-   events). Otherwise call `submit_isolated_test_event` for each one. Test
-   events never create live users.
+   synthetic values only (no names, emails or tokens) and a new
+   `operation_id` for each event. Send the same property names as the
+   code's call site; never add a property just to pass. When the server
+   offers `submit_isolated_test_events`, send them in one call (batches of
+   at most 50; resend failed ones with a new `operation_id` and queued
+   ones with the same one). Otherwise call `submit_isolated_test_event`
+   for each one. Test events never create live users.
+   `missing_properties` and the commit's `declared_not_sent` name
+   registered properties no test sent: drop them in the next registration
+   when the code has no value for them.
 5. `get_registration` returns the `gaps`. Repair each gap. A schema change
    after step 3 needs a new draft.
 6. `commit_registration`. If it reports `validation_incomplete`, read the
@@ -394,8 +406,9 @@ events arrive.
 Print one table: event code · side · file · wired · received. Then list:
 
 - the commands you ran and their before/after result,
-- the registration `revision_id`, if you made one, and the coverage that
-  `commit_registration` returns when the server includes it,
+- the registration `revision_id`, if you made one, and the
+  `install_coverage` that `commit_registration` returns when the server
+  includes it (`get_install_coverage` when you registered nothing),
 - each `must` and `should` guide that you marked absent, with its reason,
 - the billing state: source connected, server events wired, or events that
   still need a backend,

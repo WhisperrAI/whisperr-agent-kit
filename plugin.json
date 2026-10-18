@@ -1,7 +1,7 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "whisperr",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Install the Whisperr SDK with your own coding agent, verify that events arrive, and answer retention questions from your Whisperr data. Connects to the Whisperr remote MCP server.",
   "author": {
     "name": "Whisperr",
@@ -89,7 +89,7 @@
         "commerce_description": "This plugin does not sell products or process payments."
       },
       "publication": {
-        "release_notes": "0.3.0: the install skill follows the new work order (must, should and could items, the core value event, install steps). It identifies on every app start with a signed-in user, sends app_language and subscription traits, sets the push token after identify, tracks user_logged_out before reset, proposes more tailored events, and adds a billing step (RevenueCat handoff or server billing events). 0.2.2: review walkthrough video and a demo-workspace test case. 0.2.1: the install skill wires the same priority events as the hosted PR agent first (unwired_priority_codes), explains payload schema formats, and fixes the Swift push-open snippet and the Expo src/app entry path. 0.2.0: the skills name only tools that the Whisperr MCP server has. The install skill follows the server playbook, including event registration and deployment reports. Swift, React Native and Flutter snippets fixed for the current SDKs."
+        "release_notes": "0.4.0: the install skill reads the compact work order and get_event_guide, maps the app first, answers every must and should guide as present or absent with a reason, uses the engine property names filled from real code, offers at most 3 ranked extra events, sends test events in one batch and reports the install coverage. 0.3.0: the install skill follows the new work order (must, should and could items, the core value event, install steps). It identifies on every app start with a signed-in user, sends app_language and subscription traits, sets the push token after identify, tracks user_logged_out before reset, proposes more tailored events, and adds a billing step (RevenueCat handoff or server billing events). 0.2.2: review walkthrough video and a demo-workspace test case. 0.2.1: the install skill wires the same priority events as the hosted PR agent first (unwired_priority_codes), explains payload schema formats, and fixes the Swift push-open snippet and the Expo src/app entry path. 0.2.0: the skills name only tools that the Whisperr MCP server has. The install skill follows the server playbook, including event registration and deployment reports. Swift, React Native and Flutter snippets fixed for the current SDKs."
       }
     }
   }
