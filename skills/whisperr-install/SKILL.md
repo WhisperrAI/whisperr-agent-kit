@@ -72,6 +72,33 @@ The first MCP call opens a browser sign-in for the user's Whisperr app.
 Reads need `data:read`. Registration and deployment reports (steps 9 and 10)
 need `install:write`, which only owners and admins can grant.
 
+**No browser here** (a cloud agent, CI, `claude -p`): the sign-in cannot
+finish. Use an install token instead of manual mode when the environment
+has `WHISPERR_INSTALL_TOKEN` (a `wit_…` token the user created in the
+Whisperr dashboard under Integrations → Coding agent → Agent without a
+browser):
+
+- Use the install-only server `https://mcp.whisperr.net/install` with the
+  header `Authorization: Bearer $WHISPERR_INSTALL_TOKEN`. When no Whisperr
+  server is connected in this session, call the same tools with plain
+  JSON-RPC over HTTP (`curl`, one `tools/call` per request, result in
+  `result.structuredContent`). Configs and the request shape:
+  [snippets/headless.md](../../snippets/headless.md).
+- The token is a secret. Never print it, write it to a file, put it in code
+  or a commit, or pass it to a tool argument.
+- It covers one install in one app. Register every new event in one draft:
+  after the first successful `commit_registration` it can only read, so
+  `get_received_events` and `get_setup_status` still work, but a second
+  draft or `report_deployment` does not. Tell the user that the deployment
+  report needs a signed-in connection or a new token.
+- A `401` with `invalid_token` means it is wrong, expired or revoked: ask the
+  user for a new one. A `workspace_mismatch` means the publishable key is
+  for another app: ask for a token for that app.
+
+When there is no browser and no token, ask the user to create one, or
+continue in manual mode. Never ask for a token when the browser sign-in
+works.
+
 ## 2. Read the playbook
 
 Call `get_integration_playbook`. It returns `contract_version`, the ordered
