@@ -232,8 +232,9 @@ Every platform needs the same parts:
    Backend events need the **server** key (`wrk_…`) in the server's
    `WHISPERR_API_KEY`. No tool can create it, so it is the user's step:
    **Settings → API keys → Create key**, with **Runs in** set to **Server**
-   (`https://app.whisperr.net/settings?tab=keys&create=server`), then set
-   it in the server's secret store and deploy. Until the backend uses it,
+   (`https://app.whisperr.net/settings?tab=keys&create=server`; owners and
+   admins create keys), then set it in the server's secret store and
+   deploy. Until the backend uses it,
    the dashboard setup shows **Send events from your backend**.
 2. **Init once** at app start.
 3. **Track.** Add a `track` call at each approved position.

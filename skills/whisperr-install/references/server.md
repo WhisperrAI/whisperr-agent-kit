@@ -16,8 +16,9 @@ Add the name (empty) to `.env.example`. Never send it to a client.
 
 No tool can create this key. Tell the user to create it in the dashboard:
 **Settings → API keys → Create key**, with **Runs in** set to **Server**
-(`https://app.whisperr.net/settings?tab=keys&create=server`), set it in the
-server's secret store and deploy. Never ask for it in chat.
+(`https://app.whisperr.net/settings?tab=keys&create=server`; owners and
+admins create keys), set it in the server's secret store and deploy. Never
+ask for it in chat.
 
 ## Use
 
