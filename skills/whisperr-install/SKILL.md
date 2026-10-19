@@ -75,17 +75,18 @@ need `install:write`, which only owners and admins can grant.
 **No browser here** (a cloud agent, CI, `claude -p`): the sign-in cannot
 finish. Use an install token instead of manual mode when the environment
 has `WHISPERR_INSTALL_TOKEN` (a `wit_…` token the user created in the
-Whisperr dashboard under Integrations → Coding agent → Agent without a
-browser):
+Whisperr dashboard under Integrations → Your code → Coding agent → Agent
+without a browser):
 
 - Use the install-only server `https://mcp.whisperr.net/install` with the
   header `Authorization: Bearer $WHISPERR_INSTALL_TOKEN`. When no Whisperr
   server is connected in this session, call the same tools with plain
   JSON-RPC over HTTP (`curl`, one `tools/call` per request, result in
   `result.structuredContent`). Configs and the request shape:
-  [snippets/headless.md](../../snippets/headless.md).
+  [references/headless.md](references/headless.md).
 - The token is a secret. Never print it, write it to a file, put it in code
-  or a commit, or pass it to a tool argument.
+  or a commit, or pass it as an MCP tool argument. Turn off shell tracing
+  (`set +x`) around a `curl` call that carries it.
 - It covers one install in one app. Register every new event in one draft:
   after the first successful `commit_registration` it can only read, so
   `get_received_events` and `get_setup_status` still work, but a second

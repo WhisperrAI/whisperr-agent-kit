@@ -120,12 +120,12 @@ prompt into the tool. Replit also accepts a custom remote MCP server URL.
 ### Cloud agents, CI and other runs without a browser
 
 The browser sign-in cannot finish there. A workspace owner or admin creates
-an install token in the Whisperr dashboard (**Integrations → Coding agent →
-Agent without a browser**) and stores it as `WHISPERR_INSTALL_TOKEN` where
+an install token in the Whisperr dashboard (**Integrations → Your code →
+Coding agent → Agent without a browser**) and stores it as `WHISPERR_INSTALL_TOKEN` where
 the agent runs. The agent sends it as `Authorization: Bearer …` to
 `https://mcp.whisperr.net/install`. The token covers one install in one app
 and expires (60 minutes by default). Configs for Claude Code, Codex, Cursor
-and plain HTTP: [`snippets/headless.md`](snippets/headless.md). The plugin's
+and plain HTTP: [`skills/whisperr-install/references/headless.md`](skills/whisperr-install/references/headless.md). The plugin's
 own MCP config stays on the browser sign-in.
 
 ### Any other MCP client
@@ -192,7 +192,7 @@ https://whisperr.net/terms/ · Security: https://whisperr.net/security/
 | `plugin.json`, `mcp.json` | Portable [Agent Plugins](https://agent-plugins.org) package, with the OpenAI listing under `extensions.com.openai` (ChatGPT and Codex) |
 | `.agents/plugins/marketplace.json` | Codex repo marketplace |
 | `skills/` | The three skills (shared by every agent) |
-| `snippets/` | `AGENTS.md`, `CLAUDE.md` and Windsurf blocks, copy-prompt fallback, install-token configs for runs without a browser (`headless.md`) |
+| `snippets/` | `AGENTS.md`, `CLAUDE.md` and Windsurf blocks, copy-prompt fallback |
 | `registry/server.json` | Official MCP Registry entry `net.whisperr/whisperr` |
 | `scripts/validate.py` | Manifest, schema and skill checks (CI) |
 | `scripts/build-openai-zip.sh` | Builds `dist/whisperr-openai-plugin.zip` for the OpenAI plugin portal |

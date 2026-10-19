@@ -5,8 +5,8 @@ where no browser can open (a cloud agent, a CI job, `claude -p`) uses an
 **install token** instead.
 
 1. A workspace owner or admin creates the token in the Whisperr dashboard:
-   **Integrations → Coding agent → Agent without a browser → Create install
-   token**. It is shown once and starts with `wit_`.
+   **Integrations → Your code → Coding agent → Agent without a browser →
+   Create install token**. It is shown once and starts with `wit_`.
 2. Store it as the secret `WHISPERR_INSTALL_TOKEN` where the agent runs (the
    CI secret store, the cloud agent's environment settings). Never commit it
    or paste it into a file in the repository.
@@ -82,6 +82,9 @@ curl -sS https://mcp.whisperr.net/install \
   -H 'Accept: application/json, text/event-stream' \
   -d '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"get_required_events","arguments":{"publishable_key":"wpk_..."}}}'
 ```
+
+The token is expanded into the `curl` command line. In CI, turn off shell
+tracing (`set +x`) around the call so the log never shows it.
 
 A `401` with `error="invalid_token"` means the token is wrong, expired,
 revoked, or its creator is no longer an owner or admin: ask the user for a
