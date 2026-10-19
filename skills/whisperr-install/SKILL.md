@@ -229,6 +229,13 @@ Every platform needs the same parts:
    Create key → App** (prefix `wpk_`). When the user gives an API base URL,
    pass it to the SDK's `baseUrl` (or the platform's public base-URL
    variable). Do not hardcode `https://api.whisperr.net`.
+   Backend events need the **server** key (`wrk_…`) in the server's
+   `WHISPERR_API_KEY`. No tool can create it, so it is the user's step:
+   **Settings → API keys → Create key**, with **Runs in** set to **Server**
+   (`https://app.whisperr.net/settings?tab=keys&create=server`; owners and
+   admins create keys), then set it in the server's secret store and
+   deploy. Until the backend uses it,
+   the dashboard setup shows **Send events from your backend**.
 2. **Init once** at app start.
 3. **Track.** Add a `track` call at each approved position.
 4. **Push** (only if the app already uses push notifications): see step 7.
@@ -413,7 +420,9 @@ Print one table: event code · side · file · wired · received. Then list:
 - the billing state: source connected, server events wired, or events that
   still need a backend,
 - anything the user must do (add a package in Xcode, set the key in the
-  hosting provider's environment, connect RevenueCat, rebuild, confirm
+  hosting provider's environment, create the server key and set it as
+  `WHISPERR_API_KEY` on the server when backend events are wired (no tool
+  can create it), connect RevenueCat, rebuild, confirm
   email/SMS consent from the backend with the server key, or answer the
   email permission question in the dashboard when there is no backend),
 - the offer to add the Whisperr block to `AGENTS.md` / `CLAUDE.md` (text in
