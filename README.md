@@ -117,6 +117,17 @@ Use the copy-prompt fallback: [`snippets/copy-prompt.md`](snippets/copy-prompt.m
 Paste your publishable key and event list into the prompt, then paste the
 prompt into the tool. Replit also accepts a custom remote MCP server URL.
 
+### Cloud agents, CI and other runs without a browser
+
+The browser sign-in cannot finish there. A workspace owner or admin creates
+an install token in the Whisperr dashboard (**Integrations → Your code →
+Coding agent → Agent without a browser**) and stores it as `WHISPERR_INSTALL_TOKEN` where
+the agent runs. The agent sends it as `Authorization: Bearer …` to
+`https://mcp.whisperr.net/install`. The token covers one install in one app
+and expires (60 minutes by default). Configs for Claude Code, Codex, Cursor
+and plain HTTP: [`skills/whisperr-install/references/headless.md`](skills/whisperr-install/references/headless.md). The plugin's
+own MCP config stays on the browser sign-in.
+
 ### Any other MCP client
 
 ```json
