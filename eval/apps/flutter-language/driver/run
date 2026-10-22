@@ -1,0 +1,50 @@
+#!/usr/bin/env bash
+# Flow driver for flutter-language. See ../README.md.
+#   EVAL_APP_DIR   app copy to drive (agent-modified)
+#   EVAL_API_BASE  local Whisperr API base, e.g. http://localhost:8080
+#   EVAL_OUT       JSONL file; one line per step is appended
+# Optional: EVAL_FLUTTER (flutter binary, default: flutter on PATH),
+# EVAL_DART_DEFINES (space-separated NAME=value pairs passed as --dart-define),
+# EVAL_FLUSH_WAIT_MS (default 12000), EVAL_FIND_TIMEOUT_MS (default 10000).
+# Exit 0 when every step passed, 1 when a step failed or is missing (the JSONL
+# holds every step that ran), 2 on setup errors.
+set -uo pipefail
+
+here="$(cd "$(dirname "$0")" && pwd)"
+: "${EVAL_APP_DIR:?EVAL_APP_DIR is required}" "${EVAL_API_BASE:?EVAL_API_BASE is required}" "${EVAL_OUT:?EVAL_OUT is required}"
+flutter="${EVAL_FLUTTER:-flutter}"
+command -v "$flutter" >/dev/null || { echo "driver: $flutter not found (set EVAL_FLUTTER)" >&2; exit 2; }
+app="$(cd "$EVAL_APP_DIR" && pwd)" || exit 2
+mkdir -p "$(dirname "$EVAL_OUT")" && touch "$EVAL_OUT" || exit 2
+out="$(cd "$(dirname "$EVAL_OUT")" && pwd)/$(basename "$EVAL_OUT")"
+
+package="$(sed -n 's/^name:[[:space:]]*\([A-Za-z0-9_]*\).*/\1/p' "$app/pubspec.yaml" | head -n1)"
+[ -n "$package" ] || { echo "driver: no package name in pubspec.yaml" >&2; exit 2; }
+
+stamp="$app/.dart_tool/package_config.json"
+if [ ! -f "$stamp" ] || [ "$app/pubspec.yaml" -nt "$stamp" ]; then
+  echo "driver: fetching app dependencies" >&2
+  (cd "$app" && "$flutter" pub get) >&2 || exit 2
+fi
+
+# flutter test only runs tests inside the package; stage the driver there.
+stage="$app/eval_driver_test"
+rm -rf "$stage" && mkdir -p "$stage" || exit 2
+trap 'rm -rf "$stage"' EXIT
+sed "s/__APP_PACKAGE__/$package/" "$here/flows_test.dart" > "$stage/flows_test.dart" || exit 2
+
+defines=()
+for pair in ${EVAL_DART_DEFINES:-}; do defines+=("--dart-define=$pair"); done
+
+before=$(wc -l < "$out")
+cd "$app" || exit 2
+EVAL_OUT="$out" EVAL_API_BASE="$EVAL_API_BASE" \
+  "$flutter" test "${defines[@]}" --reporter expanded eval_driver_test/flows_test.dart
+status=$?
+
+steps=$(( $(wc -l < "$out") - before ))
+failed=$(tail -n "$steps" "$out" | grep -c '"ok":false')
+echo "driver: $steps steps, $failed failed (flutter test exit $status)" >&2
+if [ "$steps" -eq 0 ]; then exit 2; fi
+if [ "$failed" -gt 0 ] || [ "$steps" -lt 13 ]; then exit 1; fi
+exit 0
