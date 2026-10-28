@@ -1,6 +1,6 @@
 ---
 name: whisperr-insights
-description: Answer retention and churn questions from live Whisperr data. Use when the user asks how many users are active, at risk, dormant or churned, why users leave, which events or interventions perform, what messages Whisperr sent, or whether tracking is healthy. Reads data through the Whisperr MCP tools and can prepare changes as proposals that a person approves in the dashboard.
+description: Answer retention and churn questions from live Whisperr data. Use when the user asks how many users are active, at risk, dormant or churned, why users leave, which events or interventions perform, what messages Whisperr sent, or whether tracking is healthy. Reads data through the Whisperr MCP tools and can make changes; risky ones wait for the user to confirm in the chat.
 ---
 
 # Whisperr insights
