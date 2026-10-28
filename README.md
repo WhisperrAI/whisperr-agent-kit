@@ -11,7 +11,7 @@ server and gives it three skills:
 |---|---|
 | `whisperr-install` | Follows the Whisperr integration playbook: detects your stack, installs the Whisperr SDK at the latest version, adds init, identify/reset, push tokens, push-open tracking and RevenueCat, Superwall or Adapty linking with Whisperr's privacy rules, wires your required events, builds before and after (no new errors), registers new events, then waits until real events arrive. |
 | `whisperr-insights` | Answers retention questions ("how many users are at risk, and why?") from your live Whisperr data. Changes apply when you ask; risky ones (real sends, deletions, revocations, team changes) wait for your yes in the chat. |
-| `whisperr-keep-in-sync` | Checks every code change that touches tracked events, so a refactor does not silently stop an event. |
+| `whisperr-keep-in-sync` | Checks every code change that touches tracked events, so a refactor does not silently stop an event, and adds or retires events after an install (retiring needs your confirmation). |
 
 Supported stacks: Swift/iOS, React Native/Expo, Flutter, web (React,
 Next.js, any JS app) and Node. Python, PHP and .NET follow the

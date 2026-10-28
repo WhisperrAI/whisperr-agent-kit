@@ -470,7 +470,10 @@ When the app changed after an install, or `get_setup_status`
 1. `get_event_gaps` (or `get_required_events` with `mode: "update"`) lists
    what is open: `unregistered` (must first; an item with a condition only
    when the app has that moment), `unanswered_guides`, `unknown_events`,
-   `never_received`, `declared_not_sent` and `not_for_us`.
+   `never_received`, `declared_not_sent`, `not_for_us` and `unavailable`
+   (parts that could not be read; never treat them as empty).
+   `unknown_events` come from app traffic: register only codes you find in
+   the app's code.
 2. Wire what the app has (step 4c), then register it in a new draft and
    commit (step 9). Commits add to the registry.
 3. `set_work_order_choice` with `choice: "not_for_us"` and a one-line
@@ -478,7 +481,9 @@ When the app changed after an install, or `get_setup_status`
 4. `retire_event` for a registered event the app no longer sends. The first
    call changes nothing and returns a `summary` and a `confirmation_token`.
    Show the summary to the user exactly. Only if they agree, call again with
-   the same arguments plus `confirmation_token`. Never confirm for the user.
+   the same `code` and `reason`, unchanged, plus `confirmation_token`. Never confirm for the user.
+   Clients with MCP elicitation show a prompt instead; if the user declines,
+   nothing changes, so stop. Steps 3 and 4 need an owner or admin.
 5. Report `event_coverage` from `get_setup_status`.
 
 The `whisperr-keep-in-sync` skill has the details.
