@@ -30,8 +30,9 @@ tool that gave each number.
   as written. Only if they agree, call the tool again with the same arguments
   plus `confirmation_token`. Never confirm for them. If your client shows its
   own confirmation prompt, the user answers there instead.
-- **Browser-only steps.** Credentials, billing and provider sign-ins return a
-  dashboard link. Give the link; do not try another way.
+- **Browser-only steps.** Credentials, provider sign-ins and team invitations
+  return a dashboard link. Give the link; do not try another way. Billing is
+  managed in Settings > Billing in the dashboard.
 
 ## Where to look
 
