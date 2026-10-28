@@ -481,9 +481,10 @@ When the app changed after an install, or `get_setup_status`
 4. `retire_event` for a registered event the app no longer sends. The first
    call changes nothing and returns a `summary` and a `confirmation_token`.
    Show the summary to the user exactly. Only if they agree, call again with
-   the same `code` and `reason`, unchanged, plus `confirmation_token`. Never confirm for the user.
-   Clients with MCP elicitation show a prompt instead; if the user declines,
-   nothing changes, so stop. Steps 3 and 4 need an owner or admin.
+   the same `code` and `reason`, unchanged, plus `confirmation_token`.
+   Never confirm for the user. Clients with MCP elicitation show a prompt
+   instead; if the user declines, nothing changes, so stop. Steps 3 and 4
+   need an owner or admin.
 5. Report `event_coverage` from `get_setup_status`.
 
 The `whisperr-keep-in-sync` skill has the details.

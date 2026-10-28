@@ -90,8 +90,8 @@ action at its success path, with typed properties.
    - Show the summary to the user exactly as written and ask whether to go
      ahead.
    - Only if they clearly agree, call `retire_event` again with the same
-     `code` and `reason`, unchanged, plus `confirmation_token`. The token works once and expires
-     after 10 minutes. If they decline, do nothing.
+     `code` and `reason`, unchanged, plus `confirmation_token`. The token
+     works once and expires after 10 minutes. If they decline, do nothing.
    - Never confirm for the user.
    - Clients with MCP elicitation show the user a confirmation prompt
      instead of returning a token. If the user declines, nothing changes:
