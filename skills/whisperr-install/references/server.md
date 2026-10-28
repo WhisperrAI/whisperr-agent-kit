@@ -70,14 +70,15 @@ Add the call to the server code that already handles the purchase or the
 webhook, **after** the app updates its own state (for example, after the
 database write succeeds). Send each event once per billing fact:
 
-| Event | When |
-|---|---|
-| `subscription_started` | A paid subscription starts |
-| `subscription_renewed` | A renewal payment succeeds |
-| `subscription_payment_failed` | A renewal payment fails |
-| `subscription_cancelled` | The user turns off renewal |
-| `trial_started` | A trial starts (only when the app has trials) |
-| `subscription_ended` | Access ends (only when the app records it) |
+| Event | Slot | When |
+|---|---|---|
+| `subscription_started` | `membership_started` | A paid subscription starts |
+| `subscription_renewed` | `renewal_succeeded` | A renewal payment succeeds |
+| `subscription_payment_failed` | `billing_issue_started` | A real failed-payment or billing-retry webhook arrives. Never from a dev, test or simulation route |
+| `subscription_cancelled` | `auto_renew_disabled` | The user turns off renewal |
+| `subscription_expired` | `membership_ended` | Access ends (only when the app records it) |
+| `trial_started` | `trial_started` | A trial starts (only when the app has trials) |
+| `trial_converted` | `trial_converted` | A trial turns into the first paid period (only when the app has trials) |
 
 ```ts
 // In the Stripe webhook handler, after the app saved the new state:

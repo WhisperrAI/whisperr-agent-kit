@@ -47,9 +47,11 @@ deserves its own event.
 
 1. Check the registered events first: `get_required_events` or
    `get_event_catalog`. Reuse an existing code when the meaning is the same.
-2. If new codes are needed, propose them to the user as one list: code,
-   trigger location, properties. Wait for the user to agree. Never track in
-   render or on a button tap, never add heartbeats.
+2. If new codes are needed, wire every real moment the code has and
+   register it. Ask the user only about ambiguous ones: a moment you cannot
+   tell happens in production, or one that would carry sensitive data. List
+   each new code with its trigger location and properties in your summary.
+   Never track in render or on a button tap, never add heartbeats.
 3. Wire them as the `whisperr-install` skill describes, then build.
 4. Register them in one draft with step 9 of the `whisperr-install` skill
    (`prepare_code_source` … `commit_registration`). This needs

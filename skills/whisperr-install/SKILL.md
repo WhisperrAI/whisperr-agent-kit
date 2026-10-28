@@ -176,13 +176,20 @@ the side. `priority_codes` is the full must-have and strong set; wire
    finish; goal set and completed; streak updated, broken and protection
    used; milestone reached; item saved; reminder set and disabled; feature
    used and premium feature used; limit hit; marketing or notification
-   consent changed. Name each one after the app's own moment.
+   consent changed. When the work order or a guide has a code for it, use
+   that code. Otherwise name it after the app's own moment and register it
+   with the matching slot (`core_attempt`, `setup_start`, `setup_finish`,
+   `goal_set`, `goal_completed`, `streak_updated`, `streak_broken`,
+   `streak_protection_used`, `milestone_reached`, `saved_item`,
+   `reminder_set`, `reminder_disabled`, `feature_used`,
+   `premium_feature_used`, `marketing_consent_changed`), or `none`.
 4. **Money**, only when the app really has the feature:
    - A paywall: track `paywall_viewed` (with its `placement`) and
      `paywall_dismissed`, and register both with slot `none`. Do this also
      when RevenueCat, Superwall or Adapty sends the subscription facts:
      the source does not see the paywall.
-   - A screen to manage the subscription: `manage_subscription_viewed`.
+   - A screen to manage the subscription: `manage_subscription_viewed`,
+     with slot `manage_subscription_viewed`.
    - A trial or a subscription: the trial and subscription events come from
      step 8, never from client code.
    - One-off purchases, where money changes hands without a subscription
@@ -312,9 +319,9 @@ and call it from each place below.
    `setPushToken` after `identify` in the helper, on every launch, and on
    token refresh while a user is signed in. Keep the latest token in memory
    so the helper can send it.
-5. **Logout.** In this order: `track("user_logged_out")` (only when it is in
-   the work order), then `reset()`. After `reset()`, set the push token again
-   only when the next user logs in.
+5. **Logout.** In this order: `track("user_logged_out")`, then `reset()`.
+   Skip the event when the app has no logout. After `reset()`, set the push
+   token again only when the next user logs in.
 6. **RevenueCat, Superwall or Adapty** (only if the app already uses it):
    follow [references/revenuecat.md](references/revenuecat.md),
    [references/superwall.md](references/superwall.md) or
@@ -347,15 +354,15 @@ Find how the app takes payments. Read `billing` from step 4: when
   app updates its own state. Use a server SDK with the `wrk_` key from a
   secret store. See [references/server.md](references/server.md).
 
-  | Event | When |
-  |---|---|
-  | `subscription_started` | A paid subscription starts |
-  | `subscription_renewed` | A renewal payment succeeds |
-  | `subscription_payment_failed` | A real failed-payment or billing-retry webhook arrives. Never from a dev or simulation route |
-  | `subscription_cancelled` | The user turns off renewal |
-  | `subscription_expired` | Access ends (only when the app records it) |
-  | `trial_started` | A trial starts (only when the app has trials) |
-  | `trial_converted` | A trial turns into the first paid period (only when the app has trials) |
+  | Event | Slot | When |
+  |---|---|---|
+  | `subscription_started` | `membership_started` | A paid subscription starts |
+  | `subscription_renewed` | `renewal_succeeded` | A renewal payment succeeds |
+  | `subscription_payment_failed` | `billing_issue_started` | A real failed-payment or billing-retry webhook arrives. Never from a dev, test or simulation route |
+  | `subscription_cancelled` | `auto_renew_disabled` | The user turns off renewal |
+  | `subscription_expired` | `membership_ended` | Access ends (only when the app records it) |
+  | `trial_started` | `trial_started` | A trial starts (only when the app has trials) |
+  | `trial_converted` | `trial_converted` | A trial turns into the first paid period (only when the app has trials) |
 
   Each event has `price` (number, major units), `currency` (ISO 4217),
   `plan_period`, `product_id`, and the same user id as `identify`. Register
@@ -378,10 +385,10 @@ already registered. Otherwise, with `install:write`:
 2. `create_registration_draft` with a stable `operation_id` (reuse it on
    retry). Put **all** unregistered codes in **one** draft: universe and
    floor items, the guide moments you found, the core value event, the
-   billing events and the extra events you added. Each event has `code`, `name`, `payload_schema` (JSON
-   Schema) and `sources: [connection_id]`. Add `slot` and `side` from the
-   work order to each event. If the server rejects these fields, send the
-   draft again without them.
+   billing events and the extra events you added. Each event has `code`,
+   `name`, `payload_schema` (JSON Schema) and `sources: [connection_id]`.
+   Add `slot` and `side` from the work order to each event. If the server
+   rejects these fields, send the draft again without them.
 3. `begin_registration_validation` with the draft's `revision_id`. The draft
    is now frozen.
 4. Send one synthetic test event for every event in the draft, with
