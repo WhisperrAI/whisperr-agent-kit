@@ -16,10 +16,10 @@
       "interface": {
         "displayName": "Whisperr",
         "shortDescription": "Know who is leaving and why",
-        "longDescription": "Whisperr finds users who are about to churn and sends the right message at the right time. This plugin connects ChatGPT and Codex to your Whisperr workspace. In a codebase, it installs the Whisperr SDK (Swift, React Native, Flutter, web, Node), wires identify and tracked events with privacy rules, and checks that real events arrive. In chat, it reads your workspace: user counts, lifecycle stages, events, interventions and messages. It never returns delivery addresses, API keys or secrets. Changes, such as pausing an intervention, become proposals that a workspace member approves in the Whisperr dashboard. A Whisperr account is required.",
+        "longDescription": "Whisperr finds users who are about to churn and sends the right message at the right time. This plugin connects ChatGPT and Codex to your Whisperr workspace. In a codebase, it installs the Whisperr SDK (Swift, React Native, Flutter, web, Node), wires identify and tracked events with privacy rules, and checks that real events arrive. In chat, it reads your workspace: user counts, lifecycle stages, events, interventions and messages. It never returns delivery addresses, API keys or secrets. Changes, such as pausing an intervention, apply when you ask; risky ones, such as sending to real people, deleting or revoking, wait for your confirmation in the chat. A Whisperr account is required.",
         "developerName": "Whisperr",
         "category": "Developer Tools",
-        "capabilities": ["Install the Whisperr SDK", "Verify received events", "Read retention data", "Propose workspace changes"],
+        "capabilities": ["Install the Whisperr SDK", "Verify received events", "Read retention data", "Make workspace changes"],
         "websiteURL": "https://whisperr.net",
         "supportURL": "https://github.com/WhisperrAI/whisperr-agent-kit/issues",
         "privacyPolicyURL": "https://whisperr.net/privacy/",
@@ -63,10 +63,10 @@
               "expected_behavior": "Lists the registered event codes with their meaning and the minimum required set, in plain language."
             },
             {
-              "description": "Pause an intervention as a proposal",
+              "description": "Pause an intervention",
               "prompt": "Pause the coupon limit recovery intervention.",
               "tools_triggered": "list_interventions, set_intervention_status",
-              "expected_behavior": "Finds the intervention, prepares a pause proposal and returns the dashboard review link. States that nothing changes until a workspace member approves it."
+              "expected_behavior": "Finds the intervention, pauses it with set_intervention_status and reports the returned status. Does not send the user to the dashboard."
             }
           ],
           "negative": [

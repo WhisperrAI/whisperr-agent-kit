@@ -10,7 +10,7 @@ server and gives it three skills:
 | Skill | What it does |
 |---|---|
 | `whisperr-install` | Follows the Whisperr integration playbook: detects your stack, installs the Whisperr SDK at the latest version, adds init, identify/reset, push tokens, push-open tracking and RevenueCat, Superwall or Adapty linking with Whisperr's privacy rules, wires your required events, builds before and after (no new errors), registers new events, then waits until real events arrive. |
-| `whisperr-insights` | Answers retention questions ("how many users are at risk, and why?") from your live Whisperr data. Changes become proposals that a person approves in the dashboard. |
+| `whisperr-insights` | Answers retention questions ("how many users are at risk, and why?") from your live Whisperr data. Changes apply when you ask; risky ones (real sends, deletions, team and billing changes) wait for your yes in the chat. |
 | `whisperr-keep-in-sync` | Checks every code change that touches tracked events, so a refactor does not silently stop an event. |
 
 Supported stacks: Swift/iOS, React Native/Expo, Flutter, web (React,
@@ -20,7 +20,7 @@ Next.js, any JS app) and Node. Python, PHP and .NET follow the
 MCP server: `https://mcp.whisperr.net/mcp` (Streamable HTTP, OAuth 2.1).
 The first tool call opens a browser sign-in. You pick your Whisperr app and
 approve scopes: `data:read`, `install:write` (owners and admins) and
-`changes:propose`. You need a Whisperr account.
+`changes:propose` (make workspace changes). You need a Whisperr account.
 
 ## Install
 
@@ -156,8 +156,10 @@ key variable. The `whisperr-install` skill offers to do this for you.
   test events, deployment identifiers such as a commit SHA, and your
   questions about your data.
 - Whisperr tools never return delivery addresses (email, phone, push
-  tokens), API keys or secrets. Changes to your workspace are proposals until
-  a member approves them in the Whisperr dashboard.
+  tokens), API keys or secrets. Changes to your workspace apply when the
+  agent calls the tool. Risky ones, such as messages to real people,
+  deletions, revocations and team or billing changes, run only after you
+  confirm the exact summary in the agent.
 - The skills tell your agent to send `first_name` as the only name trait and
   to send email and phone only as channels. When your app asks users
   whether it may email them, the agent passes their answer as
