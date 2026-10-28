@@ -13,7 +13,7 @@ alwaysApply: false
 - Push (only if the app has push): `setPushToken` after `identify`, on every launch and on token refresh. After `reset()`, set it again only when the next user logs in. Never add push or a permission prompt. Expo apps with `expo-notifications` use `@whisperr/expo` with `requestPermission: false`.
 - Logout: `track("user_logged_out")` (when it is in the work order), then `reset()`.
 - Track registered event codes in `snake_case`, on the success path of one real user action. Never in render, on a button tap or on a timer. No heartbeats. No free text or personal data in properties.
-- Many tailored events help Whisperr. Propose new events for real user actions to the user as one list; add and register only the approved ones.
+- Many tailored events help Whisperr. Wire every real moment the code has and register it; ask only about ambiguous ones (not clearly in production, or sensitive data).
 - Billing: with RevenueCat, `Purchases.logIn` gets the same user id as `identify`, and the app sends no client membership events. With Stripe, Adapty, Superwall, App Store or Google Play notifications, or its own billing, the server sends `subscription_*` events after the app updates its state. Never send membership events from the client.
 - Do not rename, move or delete a `track` call without checking that the event still fires (skill `whisperr-keep-in-sync`).
 - Build, type check or analyze before and after a Whisperr change. Add no new errors.

@@ -150,13 +150,15 @@ the side. `priority_codes` is the full must-have and strong set; wire
 
 ### 4c. Map the app, answer the guides, locate each event
 
-1. **Map the app first** (a few minutes, not a full audit): the main
-   screens or routes, the core loop (the action users come back for), the
-   money touchpoints (paywall, purchases, tips, credit packs) and server
-   jobs or webhooks. Keep it to a short list.
-2. **Answer every `must` and `should` guide** in `event_guides`, and the
-   `nice` guides that fit this kind of app (a streak app has streaks, a
-   social app has invites), by its `status`:
+1. **Map the whole app first**: every screen or route, server handler,
+   background job and webhook, from the router, the data models and the
+   server handlers. Note the core loop (the action users come back for) and
+   the money touchpoints (paywall, purchases, tips, credit packs). This map
+   is the event inventory.
+2. **Wire, without asking, every real moment** that fits a work-order item
+   or a guide slot. **Answer every `must` and `should` guide** in
+   `event_guides`, and the `nice` guides that fit this kind of app (a
+   streak app has streaks, a social app has invites), by its `status`:
    - `found`: its `events` are already mapped. Reuse them; register
      nothing new.
    - `from_billing_source`: the billing source sends it. Never wire it.
@@ -164,27 +166,57 @@ the side. `priority_codes` is the full must-have and strong set; wire
    - any other status, or none: **present**, with the file and function
      where it happens (register it with the guide's `slot`), or **absent**,
      with a one-line reason.
-   Never fake an event or wire one the code cannot reach.
-3. **Money.** With a paywall, track `paywall_viewed` (with its placement)
-   and register it with slot `none`. Without a paywall, track where money
-   really changes hands in the app: one-off in-app purchases, tips, credit
-   or coin packs. Subscription billing itself comes from step 8.
-4. **Properties.** Use the property names from the guide or work order
-   (the engine reads names such as `lifetime_count`, `is_first_ever`,
-   `streak_length` and `trial_ends_at`) and fill each one from a real
-   variable in the code. Keep every required property. Leave out an
-   optional property the code does not have; never invent a value. Note
-   the file and line of each event and of the variable behind each
+   Never fake an event or wire one the code cannot reach. Wire only what
+   the production code really does, never from dev, test or simulation
+   routes.
+3. **Base events.** Look for these in every app, and wire each one the app
+   really has: `account_created`; the core action (`core_value`) and its
+   attempt (`core_attempt`) when starting and finishing differ;
+   `user_logged_out`; `account_deleted`; setup or onboarding start and
+   finish; goal set and completed; streak updated, broken and protection
+   used; milestone reached; item saved; reminder set and disabled; feature
+   used and premium feature used; limit hit; marketing or notification
+   consent changed. When the work order or a guide has a code for it, use
+   that code. Otherwise name it after the app's own moment and register it
+   with the matching slot (`core_attempt`, `setup_start`, `setup_finish`,
+   `goal_set`, `goal_completed`, `streak_updated`, `streak_broken`,
+   `streak_protection_used`, `milestone_reached`, `saved_item`,
+   `reminder_set`, `reminder_disabled`, `feature_used`,
+   `premium_feature_used`, `marketing_consent_changed`), or `none`.
+4. **Money**, only when the app really has the feature:
+   - A paywall: track `paywall_viewed` (with its `placement`) and
+     `paywall_dismissed`, and register both with slot `none`. Do this also
+     when RevenueCat, Superwall or Adapty sends the subscription facts:
+     the source does not see the paywall.
+   - A screen to manage the subscription: `manage_subscription_viewed`,
+     with slot `manage_subscription_viewed`.
+   - A trial or a subscription: the trial and subscription events come from
+     step 8, never from client code.
+   - One-off purchases, where money changes hands without a subscription
+     (credit packs, tips, coin packs): track each one where the purchase is
+     confirmed, from the backend when the repository has one.
+5. **Properties.** Send every property the code really has at that point,
+   each from a real variable: ids, plan, amounts, counts, reasons. Use the
+   property names from the guide or work order (the engine reads names
+   such as `lifetime_count`, `is_first_ever`, `streak_length` and
+   `trial_ends_at`). Keep every required property. Never invent a value,
+   a default or a placeholder, and never send personal data or free text.
+   Note the file and line of each event and of the variable behind each
    property for your list and summary.
-5. Find where each event really happens: the success path of the action
+6. Find where each event really happens: the success path of the action
    (after the API call, save or purchase succeeds), not the button tap and
    not render.
-6. **Extra events.** Map each other moment to an existing slot first. Then
-   offer at most 3 extra events that fit no slot, ranked, each with one
-   line on why it helps retention. Add only the ones the user approves.
-   Do not pad: more than about 35 events in total means you should cut.
-7. Show the user the final list (event code, file, trigger, side) and the
-   absent guides with their reasons before you edit.
+7. **Extra events.** Map each other moment to an existing slot first. Then
+   add every other real moment that helps retention and fits no slot, such
+   as an abandoned flow or the main object archived, and register it with
+   slot `none`. Do not ask first. Ask the user only about an ambiguous
+   moment: one you cannot tell happens in production, or one that would
+   carry sensitive data.
+8. **No cap and no target.** Past about 60 events, check for duplicates,
+   heartbeats and UI noise (renders, scrolls, taps). That is a sanity
+   check, not a cap.
+9. Keep the final list (event code, file and line, trigger, side) and the
+   absent guides with their reasons for the report in step 12.
 
 Do not wire the automatic events (`app_installed`, `app_updated`,
 `app_opened`, `app_backgrounded`) on Swift, React Native and Flutter. The
@@ -230,7 +262,7 @@ Every platform needs the same parts:
    pass it to the SDK's `baseUrl` (or the platform's public base-URL
    variable). Do not hardcode `https://api.whisperr.net`.
 2. **Init once** at app start.
-3. **Track.** Add a `track` call at each approved position.
+3. **Track.** Add a `track` call at each position from step 4c.
 4. **Push** (only if the app already uses push notifications): see step 7.
    Report notification taps. Never add push to an app without it, and never
    add a permission prompt. Whisperr's own push helper is not a new push
@@ -244,11 +276,12 @@ Every platform needs the same parts:
    `automaticPushPermission: false`; React Native and Flutter
    `setPushPermission` with `denied`). This is not legal advice.
 
-## 6. Minimize payloads
+## 6. Send the real properties
 
-Each `track` call sends only the properties that you register in the
-event's `payload_schema` (step 9), and each of those properties comes from
-the code: ids, plan, amounts, counts, reasons. Use the right types
+Each `track` call sends every property that the code has at that point and
+that you register in the event's `payload_schema` (step 9), and nothing
+outside it. Each value comes from the code: ids, plan, amounts, counts,
+reasons. Use the right types
 (numbers as numbers, booleans as booleans). No PII, no free text from users.
 Whisperr drops property keys named like personal data (email, phone, name)
 at ingest, so such a property never arrives.
@@ -286,9 +319,9 @@ and call it from each place below.
    `setPushToken` after `identify` in the helper, on every launch, and on
    token refresh while a user is signed in. Keep the latest token in memory
    so the helper can send it.
-5. **Logout.** In this order: `track("user_logged_out")` (only when it is in
-   the work order), then `reset()`. After `reset()`, set the push token again
-   only when the next user logs in.
+5. **Logout.** In this order: `track("user_logged_out")`, then `reset()`.
+   Skip the event when the app has no logout. After `reset()`, set the push
+   token again only when the next user logs in.
 6. **RevenueCat, Superwall or Adapty** (only if the app already uses it):
    follow [references/revenuecat.md](references/revenuecat.md),
    [references/superwall.md](references/superwall.md) or
@@ -321,14 +354,15 @@ Find how the app takes payments. Read `billing` from step 4: when
   app updates its own state. Use a server SDK with the `wrk_` key from a
   secret store. See [references/server.md](references/server.md).
 
-  | Event | When |
-  |---|---|
-  | `subscription_started` | A paid subscription starts |
-  | `subscription_renewed` | A renewal payment succeeds |
-  | `subscription_payment_failed` | A renewal payment fails |
-  | `subscription_cancelled` | The user turns off renewal |
-  | `trial_started` | A trial starts (only when the app has trials) |
-  | `subscription_ended` | Access ends (only when the app records it) |
+  | Event | Slot | When |
+  |---|---|---|
+  | `subscription_started` | `membership_started` | A paid subscription starts |
+  | `subscription_renewed` | `renewal_succeeded` | A renewal payment succeeds |
+  | `subscription_payment_failed` | `billing_issue_started` | A real failed-payment or billing-retry webhook arrives. Never from a dev, test or simulation route |
+  | `subscription_cancelled` | `auto_renew_disabled` | The user turns off renewal |
+  | `subscription_expired` | `membership_ended` | Access ends (only when the app records it) |
+  | `trial_started` | `trial_started` | A trial starts (only when the app has trials) |
+  | `trial_converted` | `trial_converted` | A trial turns into the first paid period (only when the app has trials) |
 
   Each event has `price` (number, major units), `currency` (ISO 4217),
   `plan_period`, `product_id`, and the same user id as `identify`. Register
@@ -350,11 +384,11 @@ already registered. Otherwise, with `install:write`:
 1. `prepare_code_source` returns the `connection_id` of the code source.
 2. `create_registration_draft` with a stable `operation_id` (reuse it on
    retry). Put **all** unregistered codes in **one** draft: universe and
-   floor items, the core value event, the billing events and the approved
-   extra events. Each event has `code`, `name`, `payload_schema` (JSON
-   Schema) and `sources: [connection_id]`. Add `slot` and `side` from the
-   work order to each event. If the server rejects these fields, send the
-   draft again without them.
+   floor items, the guide moments you found, the core value event, the
+   billing events and the extra events you added. Each event has `code`,
+   `name`, `payload_schema` (JSON Schema) and `sources: [connection_id]`.
+   Add `slot` and `side` from the work order to each event. If the server
+   rejects these fields, send the draft again without them.
 3. `begin_registration_validation` with the draft's `revision_id`. The draft
    is now frozen.
 4. Send one synthetic test event for every event in the draft, with
@@ -372,6 +406,8 @@ already registered. Otherwise, with `install:write`:
    after step 3 needs a new draft.
 6. `commit_registration`. If it reports `validation_incomplete`, read the
    gaps again, send the missing tests, and commit the same revision again.
+   On a signed-in connection, a later `commit_registration` adds events to
+   the ones already committed.
 
 After a disconnect, `list_registration_drafts` finds unfinished drafts.
 
@@ -403,13 +439,16 @@ events arrive.
 
 ## 12. Report
 
-Print one table: event code · side · file · wired · received. Then list:
+Print one table: event code · side · file:line · wired · received. Then list:
 
 - the commands you ran and their before/after result,
 - the registration `revision_id`, if you made one, and the
   `install_coverage` that `commit_registration` returns when the server
   includes it (`get_install_coverage` when you registered nothing),
 - each `must` and `should` guide that you marked absent, with its reason,
+- each base event and money event the app does not have, with a one-line
+  reason,
+- the extra events you added, and any you asked the user about,
 - the billing state: source connected, server events wired, or events that
   still need a backend,
 - anything the user must do (add a package in Xcode, set the key in the
