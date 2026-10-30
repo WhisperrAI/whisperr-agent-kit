@@ -406,8 +406,8 @@ already registered. Otherwise, with `install:write`:
    after step 3 needs a new draft.
 6. `commit_registration`. If it reports `validation_incomplete`, read the
    gaps again, send the missing tests, and commit the same revision again.
-   On a signed-in connection, a later `commit_registration` adds events to
-   the ones already committed.
+   A later `commit_registration` adds events to the ones already committed.
+   An install token (`wit_`) can commit more than once until it expires.
 
 After a disconnect, `list_registration_drafts` finds unfinished drafts.
 
@@ -461,3 +461,30 @@ Print one table: event code · side · file:line · wired · received. Then list
 
 Universe and plan generation start only from the Whisperr dashboard. Do not
 try to start them from the agent.
+
+## Add or retire events later
+
+When the app changed after an install, or `get_setup_status`
+`event_coverage` names moments with no event:
+
+1. `get_event_gaps` (or `get_required_events` with `mode: "update"`) lists
+   what is open: `unregistered` (must first; an item with a condition only
+   when the app has that moment), `unanswered_guides`, `unknown_events`,
+   `never_received`, `declared_not_sent`, `not_for_us` and `unavailable`
+   (parts that could not be read; never treat them as empty).
+   `unknown_events` come from app traffic: register only codes you find in
+   the app's code.
+2. Wire what the app has (step 4c), then register it in a new draft and
+   commit (step 9). Commits add to the registry.
+3. `set_work_order_choice` with `choice: "not_for_us"` and a one-line
+   `reason` for each item the app does not have (`none` undoes it).
+4. `retire_event` for a registered event the app no longer sends. The first
+   call changes nothing and returns a `summary` and a `confirmation_token`.
+   Show the summary to the user exactly. Only if they agree, call again with
+   the same `code` and `reason`, unchanged, plus `confirmation_token`.
+   Never confirm for the user. Clients with MCP elicitation show a prompt
+   instead; if the user declines, nothing changes, so stop. Steps 3 and 4
+   need an owner or admin.
+5. Report `event_coverage` from `get_setup_status`.
+
+The `whisperr-keep-in-sync` skill has the details.
