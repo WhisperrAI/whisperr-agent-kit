@@ -6,7 +6,8 @@ description: Install the Whisperr SDK in this app and prove that events arrive. 
 # Install Whisperr
 
 Whisperr decides what to track. You do the code work in this repository and
-prove that it works. Do the steps in order. Skip a step only where the step says so.
+prove that it works. Do the steps in order. Skip a step only where the step
+says so. The install ends with `complete_integration` (step 10), not before.
 
 ## Rules that always apply
 
@@ -20,8 +21,7 @@ prove that it works. Do the steps in order. Skip a step only where the step says
   Whisperr stores them unverified and not opted in, and your backend confirms
   consent with the server key. On the backend, a server SDK `identify` sends
   the app's own `opted_in` and `verified` flags; that call makes the contact
-  sendable, and SMS needs an explicit `opted_in: true` (see
-  [references/server.md](references/server.md)). An app without a backend
+  sendable (see [references/server.md](references/server.md)). An app without a backend
   can opt emails in from client code instead: the owner answers "Does your
   signup get permission to email users?" in the Whisperr dashboard. With
   Yes, an email the app sends is opted in unless `emailOptedIn` is `false`.
@@ -30,10 +30,8 @@ prove that it works. Do the steps in order. Skip a step only where the step says
   whether it may email them (a signup checkbox, an email setting), pass
   their answer as `emailOptedIn` (`true` when they agreed, `false` when they
   declined or turned it off). When the app does not ask, leave
-  `emailOptedIn` out. Never pass `true` for a user who did not agree.
-  `emailOptedIn` needs a recent SDK: install the latest version
-  (https://docs.whisperr.net/sdk-versions.json). An earlier opt-out, including the
-  unsubscribe link, is kept. Never opt in a phone or
+  `emailOptedIn` out. Never pass `true` for a user who did not agree. An
+  earlier opt-out, including the unsubscribe link, is kept. Never opt in a phone or
   pass `verified: true` from client code, and never use the `phone`
   shortcut. If the repository has no backend, tell the user to answer the
   email permission question in the dashboard.
@@ -55,31 +53,35 @@ prove that it works. Do the steps in order. Skip a step only where the step says
 - **Small diff.** Change only what the install needs. Do not reformat files,
   upgrade other packages or fix unrelated code.
 
-## 1. Check the connection
+## 1. Connect
 
-Look for the Whisperr MCP tools (server name `whisperr`, endpoint
-`https://mcp.whisperr.net/mcp`). If they are not available, tell the user how
-to connect (see the "Connect" section of
-https://docs.whisperr.net/agents/) and continue in **manual mode**: do steps
-3 to 8, ask the user for the publishable key, skip every MCP call, and let
-the user check the events in the Whisperr dashboard. The no-MCP guide
-https://docs.whisperr.net/setup.md describes the same install without the
-MCP server; read it in manual mode. When the user pasted a copy prompt from
-the dashboard (lines such as `Platform:`, `Email permission:` and `Main
-action in this app:`), use those answers.
+Look for the Whisperr MCP tools (server name `whisperr`, at
+`https://mcp.whisperr.net/mcp` or `https://mcp.whisperr.net/install`). When
+the user pasted a copy prompt from the dashboard (lines such as `Platform:`,
+`Email permission:` and `Main action in this app:`), use those answers.
 
-The first MCP call opens a browser sign-in for the user's Whisperr app.
-Reads need `data:read`. Registration and deployment reports (steps 9 and 10)
-need `install:write`, which only owners and admins can grant.
+**Publishable key.** Take the `wpk_…` key from the prompt. Without one, ask
+the user to create it in the Whisperr dashboard: **Settings → API keys →
+Create key → App**. Whenever a Whisperr tool's schema has `publishable_key`,
+pass this key; writes fail with `publishable_key_required` without it. On
+`workspace_mismatch`, stop and ask the user to sign in to the app the key
+belongs to. Never register events into another app.
 
-## 2. Read the playbook
+**Sign-in.** The first MCP call opens a browser sign-in. Writes (steps 8 and
+10) need `install:write`, which only owners and admins can grant.
 
-Call `get_integration_playbook`. It returns `contract_version`, the ordered
-`steps` and the `invariants`. This skill follows those steps in that order.
-Pass the same `contract_version` to every later Whisperr call that accepts
-it. If a call fails with a contract-version error, stop and tell the user.
+**No browser** (a cloud agent, CI, `claude -p`): when the environment has
+`WHISPERR_INSTALL_TOKEN`, connect with it as
+[references/headless.md](references/headless.md) shows. Otherwise ask the
+user to create a token. Never ask for one when the browser sign-in works.
 
-## 3. Inspect the repository and take a baseline
+**No MCP tools:** tell the user how to connect (see the "Connect" section of
+https://docs.whisperr.net/agents/). If they cannot, follow
+https://docs.whisperr.net/setup.md and do steps 2 to 7 with every MCP call
+left out. Then tell the user what you could not check, and that an owner or
+admin finishes Connect on the dashboard **Home**.
+
+## 2. Inspect the repository and take a baseline
 
 1. Detect the platform from manifest files: `Package.swift` / `*.xcodeproj`
    (Swift), `package.json` with `react-native` or `expo` (React Native),
@@ -89,7 +91,7 @@ it. If a call fails with a contract-version error, stop and tell the user.
 2. Detect the package manager from the lock file (`package-lock.json`,
    `pnpm-lock.yaml`, `yarn.lock`, `bun.lock`) and use only that one.
 3. Find the auth code: where sign-up, login and logout succeed, and where the
-   app reads the signed-in user at start. Find the billing code (step 8) and
+   app reads the signed-in user at start. Find the billing code (step 6) and
    the push code, if the app has them.
 4. Run the baseline check and save the result:
    - Swift: `xcodebuild -scheme <App> -destination 'generic/platform=iOS Simulator' build` (or `swift build` for a package)
@@ -98,24 +100,25 @@ it. If a call fails with a contract-version error, stop and tell the user.
    If the baseline already fails, tell the user and list the failures. Do not
    fix them unless the user asks.
 
-## 4. Fetch the work order and locate the events
+## 3. Fetch the work order and locate the events
 
-Call `get_required_events` and `get_workspace_context`. Use event codes
-exactly. An anchor (`AnchorFile`, `AnchorSymbol`) is a hint; confirm it in
-the code.
+**Breadth comes from the work order.** It, its guides and your map of the
+app set what you wire: every moment the app really has, however many that
+is. There is no target number. `complete_integration` refuses while the work
+order is open, so a thin install cannot finish.
 
-Current servers return a **compact** work order (it has a `details` field):
-short rows without guide prose or most `payload_schema` values. Read it
-inline. After you map the app (4c step 1), call `get_event_guide` **once**
-with `slots` (the guide slots you will wire, the `must` and `should` slots
-whose title alone you cannot answer, and the `nice` slots that fit this
-app) and `codes` (work-order codes whose `description` or `payload_schema`
-you need). It returns the full guides (when and where to fire, server or
-app, the property names the engine reads) and the full work-order items.
-Older servers return everything in `get_required_events` and have no
-`get_event_guide`; then read the same fields from that response.
+Call `get_required_events` and `get_workspace_context`. If a call fails with
+a contract-version error, stop and tell the user. Use event codes exactly. An
+anchor (`AnchorFile`, `AnchorSymbol`) is a hint; confirm it in the code.
 
-### 4a. Servers with a work order
+The work order is compact: short rows without guide prose or most
+`payload_schema` values. After you map the app (3a step 1), call
+`get_event_guide` **once** with `slots` (the guide slots you will wire, the
+`must` and `should` slots whose title alone you cannot answer, and the `nice`
+slots that fit this app) and `codes` (work-order codes whose `description` or
+`payload_schema` you need). It returns the full guides (when and where to
+fire, server or app, the property names the engine reads) and the full
+work-order items.
 
 The result has `profile` (`b2c_sub` or `generic`), `work_order`,
 `install_steps`, `billing` and `registration_rule`. Each `work_order` item has:
@@ -131,7 +134,7 @@ The result has `profile` (`b2c_sub` or `generic`), `work_order`,
 | `payload_schema`, `payload_schema_format` | The compact work order has it on registered items and on schemas with required properties. It is an allowlist: send no other property, always send the required ones, and send an optional one only when the code has a real value. For other items `get_event_guide` returns a template. `json_schema` is JSON Schema; `field_types` maps each property name to its type (`{"field": "string"}`); `field_descriptions` maps each property name to a description |
 | `status` | `wired`: do nothing. `reported`: a deployment report claims it; confirm the call in the code. `open`: wire it. `agent_decides`: wire it when this app has the action, else skip and say why. `covered_by_billing_source`: a connected billing source sends it; do not wire it |
 | `satisfied_by` | The billing provider that covers this item (for example `revenuecat`). Do not wire the item yourself |
-| `condition` | Wire the item only when this condition is true for this app. The backend billing events carry a condition; the `billing` install step (step 8) decides them |
+| `condition` | Wire the item only when this condition is true for this app. The backend billing events carry a condition; the `billing` install step (step 6) decides them |
 
 `unwired_priority_codes` lists the `must` items and strong events that are
 not wired yet. Wire those first. Items with a non-empty `condition` are not
@@ -139,16 +142,9 @@ in this list.
 
 Follow each `install_steps` item (`identify_at_start`, `logout_reset`,
 `push_token_after_identify`, `billing`). An item with `required: true` must
-be done before you finish. Steps 7 and 8 of this skill cover them.
+be done before you finish. Steps 5 and 6 of this skill cover them.
 
-### 4b. Old servers (no `work_order`)
-
-Use `events`. On each event, `tier` gives the priority, `coverage_status`
-tells you if it is wired, and `wireable_on` (`frontend` or `backend`) gives
-the side. `priority_codes` is the full must-have and strong set; wire
-`unwired_priority_codes` first. Register only events that you add or change.
-
-### 4c. Map the app, answer the guides, locate each event
+### 3a. Map the app, answer the guides, locate each event
 
 1. **Map the whole app first**: every screen or route, server handler,
    background job and webhook, from the router, the data models and the
@@ -191,7 +187,7 @@ the side. `priority_codes` is the full must-have and strong set; wire
    - A screen to manage the subscription: `manage_subscription_viewed`,
      with slot `manage_subscription_viewed`.
    - A trial or a subscription: the trial and subscription events come from
-     step 8, never from client code.
+     step 6, never from client code.
    - One-off purchases, where money changes hands without a subscription
      (credit packs, tips, coin packs): track each one where the purchase is
      confirmed, from the backend when the repository has one.
@@ -201,7 +197,10 @@ the side. `priority_codes` is the full must-have and strong set; wire
    such as `lifetime_count`, `is_first_ever`, `streak_length` and
    `trial_ends_at`). Keep every required property. Never invent a value,
    a default or a placeholder, and never send personal data or free text.
-   Note the file and line of each event and of the variable behind each
+   Use real types (numbers as numbers, booleans as booleans). Whisperr
+   drops property keys named like personal data (email, phone, name) at
+   ingest. Send nothing outside the event's `payload_schema` (step 8). Note
+   the file and line of each event and of the variable behind each
    property for your list and summary.
 6. Find where each event really happens: the success path of the action
    (after the API call, save or purchase succeeds), not the button tap and
@@ -212,40 +211,31 @@ the side. `priority_codes` is the full must-have and strong set; wire
    slot `none`. Do not ask first. Ask the user only about an ambiguous
    moment: one you cannot tell happens in production, or one that would
    carry sensitive data.
-8. **No cap and no target.** Past about 60 events, check for duplicates,
-   heartbeats and UI noise (renders, scrolls, taps). That is a sanity
-   check, not a cap.
+8. **No cap.** Past about 60 events, check for duplicates, heartbeats and UI
+   noise (renders, scrolls, taps). That is a sanity check, not a limit.
 9. Keep the final list (event code, file and line, trigger, side) and the
-   absent guides with their reasons for the report in step 12.
+   absent guides with their reasons for steps 10 and 11.
 
 Do not wire the automatic events (`app_installed`, `app_updated`,
 `app_opened`, `app_backgrounded`) on Swift, React Native and Flutter. The
 current SDKs send them. Newer SDKs also send `app_error` and
 `app_crashed`: never `track()` these names. To report an error the app
 handles, call the SDK's `trackError()`. When the app pins an old SDK,
-upgrade it (step 5).
+upgrade it (step 4).
 
-## 5. Install the SDK
+## 4. Install the SDK
 
-Install the latest version. Read it from the registry, and never guess or
-copy a version from older text. https://docs.whisperr.net/sdk-versions.json
-lists each package with its latest version and the minimum version for
-email consent (`email_consent_min`). When the app pins an older version,
-upgrade it and say so in your summary.
+Call `get_integration_playbook` with `platform` (`swift`, `react_native`,
+`flutter`, `web`, `react`, `nextjs`, `node`, `python`, `php` or `dotnet`) for
+the package, install command, key placement and init. Wire each app in the
+repository separately.
 
-| Platform | Package | Latest version |
-|---|---|---|
-| Swift | `https://github.com/WhisperrAI/whisperr-swift` (SPM) | `git ls-remote --tags https://github.com/WhisperrAI/whisperr-swift` |
-| React Native / Expo | `@whisperr/react-native` (+ `@whisperr/expo` for push in Expo apps that already use `expo-notifications`) | `npm view @whisperr/react-native version`, `npm view @whisperr/expo version` |
-| Flutter | `whisperr` (pub.dev) | `flutter pub add whisperr` resolves it |
-| Web | `@whisperr/web` | `npm view @whisperr/web version` |
-| React | `@whisperr/react` + `@whisperr/web` | `npm view @whisperr/react version` |
-| Next.js | `@whisperr/next` + `@whisperr/web` | `npm view @whisperr/next version` |
-| Node | `@whisperr/node` | `npm view @whisperr/node version` |
+Install the latest version, and never guess one.
+https://docs.whisperr.net/sdk-versions.json lists each package's latest
+version and its minimum for email consent (`email_consent_min`). When the app
+pins an older version, upgrade it and say so in your summary.
 
-Python, PHP and .NET: follow the quick start at https://docs.whisperr.net/.
-
-Then read the reference for the platform and follow it exactly:
+Read the reference for the platform and follow it exactly:
 
 - Swift / iOS: [references/swift.md](references/swift.md)
 - React Native / Expo: [references/react-native.md](references/react-native.md)
@@ -256,14 +246,12 @@ Then read the reference for the platform and follow it exactly:
 Every platform needs the same parts:
 
 1. **Key.** Put the publishable key in the platform's public config (the
-   reference names the variable). Whisperr tools never return keys. Ask the
-   user to create one in the Whisperr dashboard: **Settings → API keys →
-   Create key → App** (prefix `wpk_`). When the user gives an API base URL,
-   pass it to the SDK's `baseUrl` (or the platform's public base-URL
+   reference names the variable). Whisperr tools never return keys. When the
+   user gives an API base URL, pass it to the SDK's `baseUrl` (or the platform's public base-URL
    variable). Do not hardcode `https://api.whisperr.net`.
 2. **Init once** at app start.
-3. **Track.** Add a `track` call at each position from step 4c.
-4. **Push** (only if the app already uses push notifications): see step 7.
+3. **Track.** Add a `track` call at each position from step 3a.
+4. **Push** (only if the app already uses push notifications): see step 5.
    Report notification taps. Never add push to an app without it, and never
    add a permission prompt. Whisperr's own push helper is not a new push
    library: an Expo app that already uses `expo-notifications` gets
@@ -276,17 +264,7 @@ Every platform needs the same parts:
    `automaticPushPermission: false`; React Native and Flutter
    `setPushPermission` with `denied`). This is not legal advice.
 
-## 6. Send the real properties
-
-Each `track` call sends every property that the code has at that point and
-that you register in the event's `payload_schema` (step 9), and nothing
-outside it. Each value comes from the code: ids, plan, amounts, counts,
-reasons. Use the right types
-(numbers as numbers, booleans as booleans). No PII, no free text from users.
-Whisperr drops property keys named like personal data (email, phone, name)
-at ingest, so such a property never arrives.
-
-## 7. Link the identity
+## 5. Link the identity
 
 Put the identity calls in one helper (for example `identifyWhisperrUser(user)`)
 and call it from each place below.
@@ -309,12 +287,9 @@ and call it from each place below.
    | `subscription_currency` | ISO 4217 (`"USD"`) |
    | `plan_period` | `week`, `month`, `year` or `lifetime` |
 
-   Never email, phone, address or birth date as traits.
 3. **Email** (only if the app has the user's email). Pass it as `email` on
-   `identify`, not as a trait. When the app asks users whether it may email
-   them, add `emailOptedIn` with their answer. When it does not ask, leave
-   `emailOptedIn` out (see the consent rule at the top). The platform
-   reference shows the call.
+   `identify`, not as a trait, with `emailOptedIn` as the consent rule at the
+   top says. The platform reference shows the call.
 4. **Push token after identify** (only if the app already uses push). Call
    `setPushToken` after `identify` in the helper, on every launch, and on
    token refresh while a user is signed in. Keep the latest token in memory
@@ -328,9 +303,9 @@ and call it from each place below.
    [references/adapty.md](references/adapty.md). That SDK's login call gets
    the same user id as `identify`.
 
-## 8. Connect billing
+## 6. Connect billing
 
-Find how the app takes payments. Read `billing` from step 4: when
+Find how the app takes payments. Read `billing` from step 3: when
 `source_connected` is `true`, do not send the events that the source covers.
 
 - **RevenueCat** (`react-native-purchases`, `purchases_flutter`, RevenueCat
@@ -345,8 +320,7 @@ Find how the app takes payments. Read `billing` from step 4: when
 - **Adapty** (`react-native-adapty`, `adapty_flutter`, the Adapty iOS or
   Android SDK): follow [references/adapty.md](references/adapty.md). Call
   `get_dashboard_link` with flow `setup_adapty`.
-- An app has one billing source. With one of these three, do not add client
-  purchase events as membership facts.
+- An app has one billing source.
 - **Stripe (SDK or webhooks), App Store Server
   Notifications, Google Play RTDN, or the app's own billing backend:**
   Whisperr has no direct source for these yet. Send the billing events from
@@ -366,16 +340,24 @@ Find how the app takes payments. Read `billing` from step 4: when
 
   Each event has `price` (number, major units), `currency` (ISO 4217),
   `plan_period`, `product_id`, and the same user id as `identify`. Register
-  these events in step 9 when they are not registered.
+  these events in step 8 when they are not registered.
 - **No backend in this repository:** tell the user which billing events
   still need a backend, and stop this step. Never send membership events
   from the client.
 
-Then run the same commands as the baseline. Fix every new error or warning
-that your change caused. If a fix needs a change outside the install, stop
-and ask the user.
+Then run the baseline commands again. Fix every new error or warning your
+change caused. If a fix needs a change outside the install, ask the user.
 
-## 9. Register events
+## 7. Connect the catalog
+
+When the app sells products, courses or content, call
+`get_catalog_integration_guide` with the server `stack`, and `catalog_kind`
+and `method` when you know them. Do its `steps`: push calls from the backend,
+or a feed and `register_catalog_feed`. The catalog lets Whisperr name real
+items in messages. It needs a backend; without one, tell the user. Skip this
+step when the app sells nothing.
+
+## 8. Register events
 
 Every code that you wire must be in the committed registration. Items with
 `registered: true` need nothing. Skip this step when every wired code is
@@ -387,18 +369,16 @@ already registered. Otherwise, with `install:write`:
    floor items, the guide moments you found, the core value event, the
    billing events and the extra events you added. Each event has `code`,
    `name`, `payload_schema` (JSON Schema) and `sources: [connection_id]`.
-   Add `slot` and `side` from the work order to each event. If the server
-   rejects these fields, send the draft again without them.
+   Add `slot` and `side` from the work order to each event.
 3. `begin_registration_validation` with the draft's `revision_id`. The draft
    is now frozen.
 4. Send one synthetic test event for every event in the draft, with
    synthetic values only (no names, emails or tokens) and a new
    `operation_id` for each event. Send the same property names as the
-   code's call site; never add a property just to pass. When the server
-   offers `submit_isolated_test_events`, send them in one call (batches of
-   at most 50; resend failed ones with a new `operation_id` and queued
-   ones with the same one). Otherwise call `submit_isolated_test_event`
-   for each one. Test events never create live users.
+   code's call site; never add a property just to pass. Use
+   `submit_isolated_test_events` (batches of at most 50; resend failed ones
+   with a new `operation_id` and queued ones with the same one). Test events
+   never create live users.
    `missing_properties` and the commit's `declared_not_sent` name
    registered properties no test sent: drop them in the next registration
    when the code has no value for them.
@@ -411,80 +391,110 @@ already registered. Otherwise, with `install:write`:
 
 After a disconnect, `list_registration_drafts` finds unfinished drafts.
 
-## 10. Report the deployment
+## 9. Verify that events arrive
 
-After the user merges or deploys the change, call `report_deployment` with
-the committed `revision_id` (from step 9, or the `RevisionID` on the events
-from `get_required_events` when you registered nothing), a new `report_id`
-and the commit SHA as `deployment_ref`. This is an assertion, not proof that
-events arrive.
-
-## 11. Verify that events arrive
+Test events prove the schema, not that the code fires.
 
 1. Ask the user to run the app (simulator, emulator, device or dev server),
-   sign in, and do the flows that trigger the wired events. Name the flows.
-   You can run the app yourself if the project has a run command and a
-   simulator.
+   sign in, and do the flows that trigger the wired events. Name each flow.
+   Do not start the app, a simulator or an emulator yourself unless the user
+   asks you to.
 2. Call `get_received_events` every 15 seconds for up to 10 minutes. It
    shows the newest events, the pending ingest queue and recent ingest
-   errors. Results can be up to 15 seconds old.
-3. Expect the first automatic event of the platform (mobile: `app_opened`,
-   web: `page_viewed`; Node sends none), then the identify, then the wired
-   events. If an ingest error appears, read its reason and fix the cause
-   (wrong key, wrong event code, invalid property).
-4. Restart the app while signed in. Confirm that an identify arrives again.
-5. Then call `get_integration_coverage` for the coverage of the app.
-6. Events that need real time (renewals, cancellations, trial expiry) can
-   stay "waiting". Mark them "verify after release".
+   errors, and results can be up to 15 seconds old. Expect the platform's
+   first automatic event (mobile: `app_opened`, web: `page_viewed`; Node
+   sends none), then the wired events. Fix any ingest error at its cause
+   (wrong key, wrong event code, invalid property). Tools do not show
+   identify calls: say in your report that you wired them but did not see
+   them.
+3. Call `get_event_gaps` and read `never_received`, the registered codes with
+   no real event yet. `get_received_events` shows only recent events, so
+   never judge coverage from it. Give the user the flows for the codes still
+   listed, and read `never_received` again.
+4. A code can stay listed when it needs real time (renewals, cancellations,
+   trial expiry) or a flow the user cannot run now. Mark it "verify after
+   release" with the reason. Any other code means the call does not fire:
+   fix it. `unknown_events` are codes the app sends that are not registered:
+   register only codes you find in the app's code, and fix typos.
 
-## 12. Report
+If the user cannot run the app now, go on to step 10. Every registered code
+then stays "verify after release".
 
-Print one table: event code · side · file:line · wired · received. Then list:
+## 10. Finish with `complete_integration`
+
+Every install ends with this call, also when you registered nothing. The
+server checks the install and computes the result. Do not tell the user the
+install is finished from your own judgment.
+
+Call `complete_integration` with:
+
+| Field | Value |
+|---|---|
+| `publishable_key` | The key from step 1 |
+| `revision_id` | The committed revision from step 8, or the `RevisionID` on the events from `get_required_events` when you registered nothing |
+| `report_id` | A new id. Keep it for every call of this loop |
+| `build` | `{command, status}`: the step 2 command and its real result now |
+| `skipped` | `[{key, reason}]`: each work-order item or guide the app does not have, with a one-line reason from the code |
+| `platforms` | Each platform you wired |
+| `deployment_ref` | The merged commit SHA or release id. Leave it out until the change is merged or released |
+
+Then act on `status`:
+
+- **`blocked`**: nothing was saved. `gaps` lists everything that is left,
+  each with `kind`, `key` and `fix`. Do every `fix`: wire the moment (step
+  3a), register it (step 8), or add the item to `skipped`. For unanswered
+  setup questions, call `get_playbook_setup_questions`, answer from the code
+  in the format it asks for (`cant_tell` with a reason, never a guess), then
+  call `check_playbook_setup_answers` and `confirm_playbook_setup_answers`.
+  Then call `complete_integration` again. **Repeat until `status` is no
+  longer `blocked`.**
+- **`pending_release`**: finished. The code is in, and no real event has
+  arrived yet.
+- **`verified`**: finished, and real events have arrived. This does not mean
+  every event arrived: report `seen` of `registered`, and name the codes in
+  `never_received`.
+
+Never clear a gap by faking it: do not register an event the code does not
+send, and do not skip a moment the app has. When a fix needs the user, or
+the same gap comes back after you fixed it, stop the loop and tell the user
+exactly which gaps are left. An owner or admin can accept them on the
+dashboard **Home**. Never call an install finished while the last result was
+`blocked`.
+
+When the change is already merged or released, also call `report_deployment`
+with the same `revision_id`, a new `report_id` and the commit SHA as
+`deployment_ref`. Never for a local or unpushed branch. It is a claim, not
+proof that events arrive.
+
+## 11. Report
+
+Tell the user `message_for_user` and `next_step` from step 10 as written.
+Then print one table: event code · side · file:line · wired · received
+(received, or "verify after release" with the reason). Then list:
 
 - the commands you ran and their before/after result,
-- the registration `revision_id`, if you made one, and the
-  `install_coverage` that `commit_registration` returns when the server
-  includes it (`get_install_coverage` when you registered nothing),
-- each `must` and `should` guide that you marked absent, with its reason,
-- each base event and money event the app does not have, with a one-line
-  reason,
+- the last `complete_integration` result: `status`, `seen` of `registered`,
+  and any gaps left,
+- the `install_coverage` that `commit_registration` returns
+  (`get_install_coverage` when you registered nothing),
+- each `must` and `should` guide, base event and money event the app does
+  not have, with a one-line reason,
 - the extra events you added, and any you asked the user about,
 - the billing state: source connected, server events wired, or events that
   still need a backend,
+- the catalog state: connected, or why not,
 - anything the user must do (add a package in Xcode, set the key in the
-  hosting provider's environment, connect RevenueCat, rebuild, confirm
-  email/SMS consent from the backend with the server key, or answer the
-  email permission question in the dashboard when there is no backend),
+  hosting provider's environment, connect RevenueCat, rebuild, confirm email
+  consent from the backend with the server key, or answer the email
+  permission question in the dashboard when there is no backend),
 - the offer to add the Whisperr block to `AGENTS.md` / `CLAUDE.md` (text in
   the kit's `snippets/` folder:
   https://github.com/WhisperrAI/whisperr-agent-kit/tree/main/snippets).
 
-Universe and plan generation start only from the Whisperr dashboard. Do not
-try to start them from the agent.
+Do not start universe or plan generation from the install. The owner does
+that from the dashboard.
 
 ## Add or retire events later
 
-When the app changed after an install, or `get_setup_status`
-`event_coverage` names moments with no event:
-
-1. `get_event_gaps` (or `get_required_events` with `mode: "update"`) lists
-   what is open: `unregistered` (must first; an item with a condition only
-   when the app has that moment), `unanswered_guides`, `unknown_events`,
-   `never_received`, `declared_not_sent`, `not_for_us` and `unavailable`
-   (parts that could not be read; never treat them as empty).
-   `unknown_events` come from app traffic: register only codes you find in
-   the app's code.
-2. Wire what the app has (step 4c), then register it in a new draft and
-   commit (step 9). Commits add to the registry.
-3. `set_work_order_choice` with `choice: "not_for_us"` and a one-line
-   `reason` for each item the app does not have (`none` undoes it).
-4. `retire_event` for a registered event the app no longer sends. The first
-   call changes nothing and returns a `summary` and a `confirmation_token`.
-   Show the summary to the user exactly. Only if they agree, call again with
-   the same `code` and `reason`, unchanged, plus `confirmation_token`.
-   Never confirm for the user. Clients with MCP elicitation show a prompt
-   instead; if the user declines, nothing changes, so stop. Steps 3 and 4
-   need an owner or admin.
-5. Report `event_coverage` from `get_setup_status`.
-
-The `whisperr-keep-in-sync` skill has the details.
+When the app changed after an install, or `get_setup_status` `event_coverage`
+names moments with no event, follow the `whisperr-keep-in-sync` skill.

@@ -73,7 +73,7 @@ action at its success path, with typed properties.
    an ambiguous moment: one you cannot tell happens in production, or one
    that would carry sensitive data. Never track in render or on a button
    tap, never add heartbeats.
-3. Register the new codes in a new draft and commit it (step 9 of the
+3. Register the new codes in a new draft and commit it (step 8 of the
    `whisperr-install` skill). A commit adds to the registry. This needs
    `install:write`. An install token can commit more than once until it
    expires. Without `install:write`, the user registers the events in the
