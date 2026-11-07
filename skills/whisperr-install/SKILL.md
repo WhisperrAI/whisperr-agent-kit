@@ -388,8 +388,6 @@ After a disconnect, `list_registration_drafts` finds unfinished drafts.
 
 ## 9. Verify that events arrive
 
-Test events prove the schema, not that the code fires.
-
 1. Ask the user to run the app (simulator, emulator, device or dev server),
    sign in, and do the flows that trigger the wired events. Name each flow.
    Do not start the app, a simulator or an emulator yourself unless the user
@@ -485,8 +483,7 @@ table: event code · side · file:line · wired · received
 - the `install_coverage` that `commit_registration` returns
   (`get_install_coverage` when you registered nothing),
 - each `must` and `should` guide, base event and money event the app does
-  not have, with a one-line reason,
-- the extra events you added, and any you asked the user about,
+  not have, with a reason, and the extra events you added,
 - the billing state and the catalog state,
 - anything the user must do (add a package in Xcode, set the key in the
   hosting provider's environment, connect RevenueCat, rebuild, confirm email
@@ -495,8 +492,7 @@ table: event code · side · file:line · wired · received
 - the offer to add the Whisperr block to `AGENTS.md` / `CLAUDE.md`
   (https://github.com/WhisperrAI/whisperr-agent-kit/tree/main/snippets).
 
-Do not start universe or plan generation from the install. The owner does
-that from the dashboard.
+Do not start universe or plan generation: the owner does that.
 
 ## Add or retire events later
 
