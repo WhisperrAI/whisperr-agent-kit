@@ -431,10 +431,10 @@ Call `complete_integration` with:
 | Field | Value |
 |---|---|
 | `publishable_key` | The key from step 1 |
-| `revision_id` | The committed revision from step 8, or the `RevisionID` on the events from `get_required_events` when you registered nothing |
+| `revision_id` | The revision of your latest `commit_registration`, or the `RevisionID` on the events from `get_required_events` when you registered nothing |
 | `report_id` | A new id. Keep it for every call of this loop |
-| `build` | `{command, status}`: the step 2 command and its real result now |
-| `skipped` | `[{key, reason}]`: each work-order item or guide the app does not have, with a one-line reason from the code |
+| `build` | `{command, status}`: the step 2 command and its real result now, `passed`, `failed` or `not_run`. `failed` blocks |
+| `skipped` | `[{key, reason}]`: each `should` moment you leave out, by its key from `get_event_gaps`, with a one-line reason from the code. A `must` moment cannot be skipped |
 | `platforms` | Each platform you wired |
 | `deployment_ref` | The merged commit SHA or release id. Leave it out until the change is merged or released |
 
@@ -442,12 +442,11 @@ Then act on `status`:
 
 - **`blocked`**: nothing was saved. `gaps` lists everything that is left,
   each with `kind`, `key` and `fix`. Do every `fix`: wire the moment (step
-  3a), register it (step 8), or add the item to `skipped`. For unanswered
-  setup questions, call `get_playbook_setup_questions`, answer from the code
-  in the format it asks for (`cant_tell` with a reason, never a guess), then
-  call `check_playbook_setup_answers` and `confirm_playbook_setup_answers`.
-  Then call `complete_integration` again. **Repeat until `status` is no
-  longer `blocked`.**
+  3a) and register it (step 8). When the app does not have the moment, mark
+  it with `set_work_order_choice` (`not_for_us`, with the reason). Answer
+  setup questions from the code; say `cant_tell` rather than guess. Then call
+  `complete_integration` again. **Repeat until `status` is no longer
+  `blocked`.**
 - **`pending_release`**: finished. The code is in, and no real event has
   arrived yet.
 - **`verified`**: finished, and real events have arrived. This does not mean
@@ -468,8 +467,8 @@ proof that events arrive.
 
 ## 11. Report
 
-Tell the user `message_for_user` and `next_step` from step 10 as written.
-Then print one table: event code · side · file:line · wired · received
+Tell the user `message_for_user` from step 10 as written, and do what
+`next_step` says. Then print one table: event code · side · file:line · wired · received
 (received, or "verify after release" with the reason). Then list:
 
 - the commands you ran and their before/after result,
