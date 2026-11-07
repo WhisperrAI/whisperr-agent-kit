@@ -460,10 +460,10 @@ exactly which gaps are left. An owner or admin can accept them on the
 dashboard **Home**. Never call an install finished while the last result was
 `blocked`.
 
-When the change is already merged or released, also call `report_deployment`
-with the same `revision_id`, a new `report_id` and the commit SHA as
-`deployment_ref`. Never for a local or unpushed branch. It is a claim, not
-proof that events arrive.
+When the change is already merged or released, call `report_deployment`
+before this step, with the same `revision_id`, its own `report_id` and the
+commit SHA as `deployment_ref`. Never for a local or unpushed branch. It is a
+claim, not proof that events arrive.
 
 ## 11. Report
 
