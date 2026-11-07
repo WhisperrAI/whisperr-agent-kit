@@ -446,17 +446,19 @@ Then act on `status`:
   - The app has the moment: wire it (step 3a) and register it (step 8).
   - Not a `must`, and the app lacks it or this repository cannot send it:
     list it in `skipped`, or mark it with `set_work_order_choice`
-    (`not_for_us`, with the reason).
+    (`not_for_us`, the reason, and the gap's `key` as it is).
   - A `must` the app lacks: mark it once, the same way.
   - A `must` the app has but this repository cannot send: do not mark it.
     Leave it open and tell the user what has to send it.
+  - `must_not_for_us`: leave it. Only the owner can accept it, and a new
+    mark cancels their acceptance.
   - `setup_questions`: call `get_playbook_setup_questions`, answer from the
     code (say `cant_tell` rather than guess), then call
     `check_playbook_setup_answers` and `confirm_playbook_setup_answers`.
-- **`needs_owner`**: your work is done, and a person accepts the rest. The
-  only gaps left are `must` moments marked not for us. Stop, and tell the
-  user `message_for_user`. Do not mark a `must` again: a new mark cancels the
-  owner's acceptance.
+- **`needs_owner`**: your work is done. The only gaps left are `must` moments
+  marked not for us. Stop, do not call `complete_integration` again, and tell
+  the user `message_for_user`. It says whether the owner can accept them or
+  they stay open. Promise nothing else.
 - **`pending_release`**: finished. The code is in, and no real event has
   arrived yet.
 - **`verified`**: finished, and real events have arrived. This does not mean
@@ -468,7 +470,7 @@ send, and do not skip a moment the app has. When a fix needs the user, stop
 and tell them. Name each key left and its reason: Home may not list them. An
 owner or admin accepts them in **Connect your code** on **Home**. If Connect
 already reads as done there, no button shows: say the gaps stay open. Never
-call an install finished while the last result was `blocked` or `needs_owner`.
+call an install finished while the last result was `blocked`.
 
 ## 11. Report
 
