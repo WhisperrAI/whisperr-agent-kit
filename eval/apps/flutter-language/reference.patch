@@ -1,0 +1,406 @@
+diff --git a/lib/analytics/whisperr.dart b/lib/analytics/whisperr.dart
+new file mode 100644
+index 0000000..5045f23
+--- /dev/null
++++ b/lib/analytics/whisperr.dart
+@@ -0,0 +1,33 @@
++import 'dart:async';
++
++import 'package:whisperr/whisperr.dart';
++
++import '../config.dart';
++import '../data/models.dart';
++
++/// Starts the Whisperr SDK once, before the first frame.
++Future<void> initWhisperr() =>
++    Whisperr.initialize(apiKey: AppConfig.whisperrApiKey, baseUrl: AppConfig.whisperrBaseUrl);
++
++/// Records a product event; buffered and delivered in the background.
++void trackEvent(String eventType, Map<String, Object> properties) {
++  if (!Whisperr.isInitialized) return;
++  unawaited(Whisperr.instance.track(eventType, properties: properties));
++}
++
++/// Tells Whisperr who is signed in. Email is a contact channel only with the
++/// learner's marketing consent.
++Future<void> identifyUser(User user) async {
++  if (!Whisperr.isInitialized) return;
++  await Whisperr.instance.identify(
++    user.id,
++    traits: {'first_name': user.firstName},
++    channels: [if (user.marketingOptIn) WhisperrChannel.email(user.email, optedIn: true)],
++  );
++}
++
++/// Forgets the signed-in learner; the next events are anonymous.
++Future<void> resetIdentity() async {
++  if (!Whisperr.isInitialized) return;
++  await Whisperr.instance.reset(flushBeforeReset: false);
++}
+diff --git a/lib/config.dart b/lib/config.dart
+index ec221e5..9b74312 100644
+--- a/lib/config.dart
++++ b/lib/config.dart
+@@ -10,6 +10,17 @@ class AppConfig {
+   );
+   static const supportEmail = 'support@parla.example';
+ 
++  /// Whisperr publishable ingestion key; it can only send events, so it is
++  /// safe to ship in the app.
++  static const whisperrApiKey = String.fromEnvironment(
++    'WHISPERR_API_KEY',
++    defaultValue: 'wpk_replace_with_your_publishable_key',
++  );
++  static const whisperrBaseUrl = String.fromEnvironment(
++    'WHISPERR_BASE_URL',
++    defaultValue: 'http://localhost:8080',
++  );
++
+   /// Simulated round-trip time of the fake backend.
+   static const mockLatency = Duration(
+     milliseconds: int.fromEnvironment('PARLA_MOCK_LATENCY_MS', defaultValue: 300),
+diff --git a/lib/main.dart b/lib/main.dart
+index f7540b0..27277c9 100644
+--- a/lib/main.dart
++++ b/lib/main.dart
+@@ -1,10 +1,12 @@
+ import 'package:flutter/material.dart';
+ 
++import 'analytics/whisperr.dart';
+ import 'app.dart';
+ import 'data/fake_backend.dart';
+ 
+ Future<void> main() async {
+   WidgetsFlutterBinding.ensureInitialized();
++  await initWhisperr();
+   final backend = await FakeBackend.open();
+   runApp(ParlaApp(backend: backend));
+ }
+diff --git a/lib/screens/billing/paywall_screen.dart b/lib/screens/billing/paywall_screen.dart
+index 6797780..05bec97 100644
+--- a/lib/screens/billing/paywall_screen.dart
++++ b/lib/screens/billing/paywall_screen.dart
+@@ -1,6 +1,7 @@
+ import 'package:flutter/material.dart';
+ import 'package:provider/provider.dart';
+ 
++import '../../analytics/whisperr.dart';
+ import '../../data/fake_backend.dart';
+ import '../../data/models.dart';
+ import '../../state/subscription_controller.dart';
+@@ -36,6 +37,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
+   @override
+   void initState() {
+     super.initState();
++    trackEvent('paywall_viewed', {'source': widget.source.id});
+     context.read<SubscriptionController>().listPlans().then(
+       (plans) {
+         if (mounted) setState(() => _plans = plans);
+diff --git a/lib/screens/lessons/lesson_preview_screen.dart b/lib/screens/lessons/lesson_preview_screen.dart
+index d82bd1a..81ef0f8 100644
+--- a/lib/screens/lessons/lesson_preview_screen.dart
++++ b/lib/screens/lessons/lesson_preview_screen.dart
+@@ -1,6 +1,7 @@
+ import 'package:flutter/material.dart';
+ import 'package:provider/provider.dart';
+ 
++import '../../analytics/whisperr.dart';
+ import '../../data/fake_backend.dart';
+ import '../../data/models.dart';
+ import '../../state/auth_controller.dart';
+@@ -30,6 +31,7 @@ class _LessonPreviewScreenState extends State<LessonPreviewScreen> {
+     super.initState();
+     context.read<ProgressController>().fetchLesson(widget.lessonId).then(
+       (lesson) {
++        trackEvent('lesson_previewed', {'lesson_id': lesson.id});
+         if (mounted) setState(() => _lesson = lesson);
+       },
+       onError: (Object error) {
+diff --git a/lib/screens/onboarding/onboarding_screen.dart b/lib/screens/onboarding/onboarding_screen.dart
+index 3c72480..2fd33b9 100644
+--- a/lib/screens/onboarding/onboarding_screen.dart
++++ b/lib/screens/onboarding/onboarding_screen.dart
+@@ -1,6 +1,7 @@
+ import 'package:flutter/material.dart';
+ import 'package:provider/provider.dart';
+ 
++import '../../analytics/whisperr.dart';
+ import '../../data/fake_backend.dart';
+ import '../../data/models.dart';
+ import '../../state/auth_controller.dart';
+@@ -32,13 +33,21 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
+         _Step.dailyGoal => _answers.dailyGoalMinutes != null,
+       };
+ 
+-  Future<void> _finish(OnboardingAnswers answers) async {
++  Future<void> _finish(OnboardingAnswers answers, {required bool skipped}) async {
+     setState(() {
+       _saving = true;
+       _error = null;
+     });
+     try {
+       await context.read<AuthController>().completeOnboarding(answers);
++      final (reason, level, goal) = (answers.reason, answers.level, answers.dailyGoalMinutes);
++      if (!skipped && reason != null && level != null && goal != null) {
++        trackEvent('onboarding_completed', {
++          'learning_reason': reason.name,
++          'level': level.name,
++          'daily_goal_minutes': goal,
++        });
++      }
+     } on ApiException catch (error) {
+       if (!mounted) return;
+       setState(() {
+@@ -108,12 +117,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
+             busy: _saving,
+             onPressed: !_canContinue
+                 ? null
+-                : () => _isLast ? _finish(_answers) : setState(() => _step = _Step.values[_step.index + 1]),
++                : () => _isLast ? _finish(_answers, skipped: false) : setState(() => _step = _Step.values[_step.index + 1]),
+           ),
+           SecondaryButton(
+             key: const Key('onboarding-skip'),
+             label: 'Skip for now',
+-            onPressed: _saving ? null : () => _finish(_answers),
++            onPressed: _saving ? null : () => _finish(_answers, skipped: true),
+           ),
+         ],
+       ),
+diff --git a/lib/state/auth_controller.dart b/lib/state/auth_controller.dart
+index ba5db0c..cc31ea8 100644
+--- a/lib/state/auth_controller.dart
++++ b/lib/state/auth_controller.dart
+@@ -3,6 +3,7 @@ import 'dart:convert';
+ import 'package:flutter/foundation.dart';
+ import 'package:shared_preferences/shared_preferences.dart';
+ 
++import '../analytics/whisperr.dart';
+ import '../data/auth_repository.dart';
+ import '../data/fake_backend.dart';
+ import '../data/models.dart';
+@@ -34,10 +35,12 @@ class AuthController extends ChangeNotifier {
+     final saved = Session.fromJson((jsonDecode(raw) as Map).cast());
+     try {
+       final user = await _repository.me(saved.token);
++      await identifyUser(user);
+       await _persist(Session(token: saved.token, user: user));
+     } on ApiException catch (error) {
+       if (error.code == 'network_error') {
+         // Offline at launch: keep the cached session so the app stays usable.
++        await identifyUser(saved.user);
+         _set(saved);
+       } else {
+         await _persist(null);
+@@ -57,18 +60,23 @@ class AuthController extends ChangeNotifier {
+       password: password,
+       marketingOptIn: marketingOptIn,
+     );
++    await identifyUser(next.user);
++    trackEvent('signup_completed', {'method': 'email'});
+     await _persist(next);
+     return next.user;
+   }
+ 
+   Future<User> logIn(String email, String password) async {
+     final next = await _repository.logIn(email, password);
++    await identifyUser(next.user);
++    trackEvent('logged_in', {'method': 'email'});
+     await _persist(next);
+     return next.user;
+   }
+ 
+   Future<void> logOut() async {
+     final token = _session?.token;
++    await resetIdentity();
+     await _persist(null);
+     if (token == null) return;
+     try {
+diff --git a/lib/state/progress_controller.dart b/lib/state/progress_controller.dart
+index 3073760..1520ba9 100644
+--- a/lib/state/progress_controller.dart
++++ b/lib/state/progress_controller.dart
+@@ -1,5 +1,6 @@
+ import 'package:flutter/foundation.dart';
+ 
++import '../analytics/whisperr.dart';
+ import '../data/lesson_repository.dart';
+ import '../data/models.dart';
+ import 'auth_controller.dart';
+@@ -65,8 +66,15 @@ class ProgressController extends ChangeNotifier {
+     final result = await _repository.completeLesson(token, lessonId, answers);
+     _results = [..._results, result];
+     notifyListeners();
++    trackEvent('lesson_completed', {
++      'lesson_id': result.lessonId,
++      'score_percent': result.scorePercent,
++      'xp_earned': result.xpEarned,
++    });
+     final goal = user.dailyGoal;
+-    return LessonCompletion(result, reachedDailyGoal: before < goal && minutesOn(now) >= goal);
++    final reachedDailyGoal = before < goal && minutesOn(now) >= goal;
++    if (reachedDailyGoal) trackEvent('daily_goal_reached', {'daily_goal_minutes': goal});
++    return LessonCompletion(result, reachedDailyGoal: reachedDailyGoal);
+   }
+ 
+   void _onAuthChanged() {
+diff --git a/lib/state/subscription_controller.dart b/lib/state/subscription_controller.dart
+index 0cb5974..bed4353 100644
+--- a/lib/state/subscription_controller.dart
++++ b/lib/state/subscription_controller.dart
+@@ -1,6 +1,9 @@
+ import 'package:flutter/foundation.dart';
+ 
++import '../analytics/whisperr.dart';
+ import '../data/billing_repository.dart';
++import '../data/fake_backend.dart';
++import '../data/fixtures.dart';
+ import '../data/models.dart';
+ import 'auth_controller.dart';
+ 
+@@ -25,7 +28,22 @@ class SubscriptionController extends ChangeNotifier {
+   Future<Receipt> purchase(PurchaseRequest request) async {
+     final token = _token;
+     if (token == null) throw StateError('Not signed in');
+-    final receipt = await _repository.purchase(token, request);
++    final Receipt receipt;
++    try {
++      receipt = await _repository.purchase(token, request);
++    } on ApiException catch (error) {
++      if (error.code == 'card_declined') {
++        trackEvent('payment_failed', {'plan_id': request.planId, 'reason': error.code});
++      }
++      rethrow;
++    }
++    final plan = plans.firstWhere((p) => p.id == receipt.subscription.planId);
++    trackEvent('subscription_started', {
++      'plan_id': plan.id,
++      'price_cents': receipt.amountCents,
++      'currency': receipt.currency,
++      'billing_period': plan.period.name,
++    });
+     _subscription = receipt.subscription;
+     notifyListeners();
+     return receipt;
+@@ -35,6 +53,7 @@ class SubscriptionController extends ChangeNotifier {
+     final token = _token;
+     if (token == null) throw StateError('Not signed in');
+     final next = await _repository.cancel(token, reason, feedback);
++    trackEvent('subscription_cancelled', {'plan_id': next.planId, 'reason': reason.id});
+     _subscription = next;
+     notifyListeners();
+     return next;
+diff --git a/pubspec.lock b/pubspec.lock
+index 3c6112a..fc70cee 100644
+--- a/pubspec.lock
++++ b/pubspec.lock
+@@ -65,6 +65,14 @@ packages:
+       url: "https://pub.dev"
+     source: hosted
+     version: "2.2.0"
++  ffi_leak_tracker:
++    dependency: transitive
++    description:
++      name: ffi_leak_tracker
++      sha256: "4093d4ef9ca06ffe2786e73bfb25e22aa92112b9bb4ec941f11e3e6b61489a97"
++      url: "https://pub.dev"
++    source: hosted
++    version: "0.1.2"
+   file:
+     dependency: transitive
+     description:
+@@ -96,6 +104,22 @@ packages:
+     description: flutter
+     source: sdk
+     version: "0.0.0"
++  http:
++    dependency: transitive
++    description:
++      name: http
++      sha256: "87721a4a50b19c7f1d49001e51409bddc46303966ce89a65af4f4e6004896412"
++      url: "https://pub.dev"
++    source: hosted
++    version: "1.6.0"
++  http_parser:
++    dependency: transitive
++    description:
++      name: http_parser
++      sha256: "178d74305e7866013777bab2c3d8726205dc5a4dd935297175b19a23a2e66571"
++      url: "https://pub.dev"
++    source: hosted
++    version: "4.1.2"
+   leak_tracker:
+     dependency: transitive
+     description:
+@@ -160,6 +184,22 @@ packages:
+       url: "https://pub.dev"
+     source: hosted
+     version: "1.0.0"
++  package_info_plus:
++    dependency: transitive
++    description:
++      name: package_info_plus
++      sha256: "73ef2cd5c11a7548f9b7f6fc2a4f6113de2e64aa2a70de63feede95548822908"
++      url: "https://pub.dev"
++    source: hosted
++    version: "10.2.2"
++  package_info_plus_platform_interface:
++    dependency: transitive
++    description:
++      name: package_info_plus_platform_interface
++      sha256: db762cb2f4f25ee60fb6359773861b0f199e00b90d237bd85a76a1e806b46ef4
++      url: "https://pub.dev"
++    source: hosted
++    version: "4.1.0"
+   path:
+     dependency: transitive
+     description:
+@@ -325,6 +365,14 @@ packages:
+       url: "https://pub.dev"
+     source: hosted
+     version: "0.7.12"
++  typed_data:
++    dependency: transitive
++    description:
++      name: typed_data
++      sha256: f9049c039ebfeb4cf7a7104a675823cd72dba8297f264b6637062516699fa006
++      url: "https://pub.dev"
++    source: hosted
++    version: "1.4.0"
+   vector_math:
+     dependency: transitive
+     description:
+@@ -349,6 +397,22 @@ packages:
+       url: "https://pub.dev"
+     source: hosted
+     version: "1.1.1"
++  whisperr:
++    dependency: "direct main"
++    description:
++      name: whisperr
++      sha256: "4b6d14b1f4c7c04d1df44ea265fd45c14e625e53b580192785a0e7a2c1e54253"
++      url: "https://pub.dev"
++    source: hosted
++    version: "0.5.0"
++  win32:
++    dependency: transitive
++    description:
++      name: win32
++      sha256: a0b93865d5644f11cf6a8c3f6db909f1ec168958b5805f6cc684adea957cd63d
++      url: "https://pub.dev"
++    source: hosted
++    version: "6.4.0"
+   xdg_directories:
+     dependency: transitive
+     description:
+diff --git a/pubspec.yaml b/pubspec.yaml
+index 8167715..ab6542c 100644
+--- a/pubspec.yaml
++++ b/pubspec.yaml
+@@ -36,6 +36,7 @@ dependencies:
+   cupertino_icons: ^1.0.8
+   provider: ^6.1.5+1
+   shared_preferences: ^2.5.6
++  whisperr: ^0.5.0
+ 
+ dev_dependencies:
+   flutter_test:

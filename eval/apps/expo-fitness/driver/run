@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+# Flow driver for expo-fitness. See ../README.md.
+#   EVAL_APP_DIR   app copy to drive (agent-modified)
+#   EVAL_API_BASE  local Whisperr API base, e.g. http://localhost:8080
+#   EVAL_OUT       JSONL file; one line per step is appended
+# Optional: EVAL_FLUSH_WAIT_MS (default 12000), EVAL_STEP_SETTLE_MS (default 600).
+# Exit 0 when every step passed, 1 when a step failed (the JSONL is complete
+# either way), 2 on setup errors.
+set -uo pipefail
+
+here="$(cd "$(dirname "$0")" && pwd)"
+: "${EVAL_APP_DIR:?EVAL_APP_DIR is required}" "${EVAL_API_BASE:?EVAL_API_BASE is required}" "${EVAL_OUT:?EVAL_OUT is required}"
+app="$(cd "$EVAL_APP_DIR" && pwd)" || exit 2
+mkdir -p "$(dirname "$EVAL_OUT")" && touch "$EVAL_OUT" || exit 2
+out="$(cd "$(dirname "$EVAL_OUT")" && pwd)/$(basename "$EVAL_OUT")"
+
+stamp="$app/node_modules/.package-lock.json"
+if [ ! -f "$stamp" ] || [ "$app/package.json" -nt "$stamp" ]; then
+  echo "driver: installing app dependencies" >&2
+  if [ -f "$app/package-lock.json" ]; then
+    (cd "$app" && npm ci --no-audit --no-fund --loglevel=error) || exit 2
+  else
+    (cd "$app" && npm install --no-audit --no-fund --loglevel=error) || exit 2
+  fi
+fi
+
+before=$(wc -l < "$out")
+cd "$app" || exit 2
+EVAL_APP_DIR="$app" EVAL_OUT="$out" EVAL_API_BASE="$EVAL_API_BASE" \
+  npx --no-install jest --config "$here/jest.config.js" --runInBand --ci --forceExit --silent=false
+status=$?
+
+steps=$(( $(wc -l < "$out") - before ))
+failed=$(tail -n "$steps" "$out" | grep -c '"ok":false')
+echo "driver: $steps steps, $failed failed (jest exit $status)" >&2
+if [ "$steps" -eq 0 ]; then exit 2; fi
+if [ "$failed" -gt 0 ] || [ "$steps" -lt 13 ]; then exit 1; fi
+exit 0
