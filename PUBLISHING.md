@@ -129,7 +129,7 @@ listing.
 
 ## 6. Catalogs that need no review
 
-Step 4 is done. Smithery (https://smithery.ai/new, paste the server URL);
+Step 4 is done. Smithery (https://smithery.ai, paste the server URL);
 check whether mcp.so, Glama and PulseMCP already import the registry entry.
 
 ## Release checklist (each version)

@@ -41,8 +41,7 @@ whisperr.identify(userId, {
 ```
 
 Send the app's own flags, never a guess. This server-key `identify` is what
-makes the contact sendable, also for an address the app sent first. Whisperr
-never opts in SMS by default: send `optedIn: true` for SMS consent.
+makes the contact sendable, also for an address the app sent first.
 
 The Node, Python and PHP SDKs send `opted_in: true` when `optedIn` is
 omitted, and their `phone` shortcut does the same. Wire a channel only when
@@ -95,7 +94,7 @@ whisperr.track(appUserId, "subscription_renewed", {
 - `price` is a number in major units (`9.99`), not cents.
 - Webhooks can arrive twice. Send the event only when the app's own handler
   accepts the webhook as new.
-- Register these events (install skill, step 9) when they are not
+- Register these events (install skill, step 8) when they are not
   registered.
 - Never send these events from the client.
 

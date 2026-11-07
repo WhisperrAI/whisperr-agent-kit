@@ -73,7 +73,7 @@ action at its success path, with typed properties.
    an ambiguous moment: one you cannot tell happens in production, or one
    that would carry sensitive data. Never track in render or on a button
    tap, never add heartbeats.
-3. Register the new codes in a new draft and commit it (step 9 of the
+3. Register the new codes in a new draft and commit it (step 8 of the
    `whisperr-install` skill). A commit adds to the registry. This needs
    `install:write`. An install token can commit more than once until it
    expires. Without `install:write`, the user registers the events in the
@@ -82,7 +82,7 @@ action at its success path, with typed properties.
 4. For each work-order item the app does not have, call
    `set_work_order_choice` with its `key`, `choice: "not_for_us"` and a
    one-line `reason` from the code. `choice: "none"` undoes it. Never mark a
-   moment the app has.
+   moment the app has. A new mark on a `must` cancels the owner's acceptance.
 5. For a registered event the app no longer sends, call `retire_event` with
    its `code` and a one-line `reason`. The user confirms it:
    - The first call changes nothing. It returns a `summary` and a
