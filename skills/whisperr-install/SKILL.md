@@ -11,9 +11,9 @@ says so. The install ends with `complete_integration` (step 10), not before.
 
 ## Rules that always apply
 
-- **Git branch.** In a git repo, branch off the checked-out branch first (e.g.
-  `whisperr/install`); never switch to `main`, `master` or another branch. Ask
-  only on a detached HEAD or others' uncommitted changes. Push or PR only if asked.
+- **Git branch.** On `main`/`master`, branch off it (e.g. `whisperr/install`).
+  On another branch, or with uncommitted changes you didn't make, ask first, with
+  [these options](https://docs.whisperr.net/setup.md#work-on-a-new-branch). Push or PR only if asked.
 - **No new errors.** Run the project's own build, type check or analyzer
   before you change code and after. Finish only when the "after" result has
   no error or warning that the "before" result did not have.
