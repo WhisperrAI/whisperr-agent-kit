@@ -21,6 +21,7 @@ Platform: <Web | Next.js | React | Expo | React Native | Flutter | Swift>
 Email permission: <Yes | Per user | No | Not answered>
 Main action in this app: <MAIN_ACTION>
 Events already registered: <EVENT_CODES>
+If this is a git repo, create a new branch (e.g. whisperr/install) from the one checked out now before you change files, and commit there. Never switch to, pull or rebase onto main, master or another branch yourself; ask me first only if HEAD is detached or there are uncommitted changes that aren't yours. Push or open a pull request only if I ask.
 ```
 
 - `<WPK_KEY>`: a publishable key (`wpk_…`). **Copy the prompt** adds it, and
@@ -34,6 +35,9 @@ Events already registered: <EVENT_CODES>
   from your app's code. Whisperr does not pick an event name for you.
 - `<EVENT_CODES>`: the event codes that are already registered for your
   app, comma-separated.
+- The last line keeps the agent's changes on a new git branch made from the
+  one you have checked out, so it works whatever your main branch is called.
+  Builders without git skip it.
 
 The prompt has no SDK versions and no install steps: setup.md installs the
 latest version of the right SDK.
